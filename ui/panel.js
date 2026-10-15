@@ -157,6 +157,13 @@
     .search input::placeholder { color: var(--faint); }
     .search input:focus { outline: none; }
 
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 11px; border-radius: 999px; font-size: 12.5px; font-weight: 500; color: var(--muted);
+      box-shadow: inset 0 0 0 1px var(--line); transition: background-color .12s ease, color .12s ease, box-shadow .12s ease; }
+    .chip:hover { background: var(--hover); color: var(--text); }
+    .chip[aria-pressed="true"] { background: color-mix(in srgb, var(--amber) 16%, transparent); color: var(--text); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--amber) 60%, transparent); }
+    .chip-n { color: var(--faint); font-variant-numeric: tabular-nums; }
+    .chip[aria-pressed="true"] .chip-n { color: var(--accent-text); }
     .hint { font-size: 12.5px; color: var(--faint); text-wrap: pretty; }
     .toolbar { display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; color: var(--muted); min-height: 24px; }
     .toolbar-actions { display: flex; gap: 14px; }
@@ -332,6 +339,7 @@
     queue: null, // { savedAt, ids: [...] } sisa antrean unfollow asli
     filter: "inactive",
     query: "",
+    follow: "all", // filter tampilan: "all" | "yes" (follow balik) | "no" (tidak follow balik)
     page: 0,
     selected: new Set(),
     busy: null, // null | "scan" | "unfollow"
@@ -707,6 +715,39 @@
     renderList();
   }
 
+  function matchesFollow(r) {
+    return state.follow === "all" || (state.follow === "yes") === Boolean(r.followedBy);
+  }
+
+  /** Chip filter follow balik: hanya menyaring tampilan grup yang sedang dibuka (seperti kolom cari). */
+  function followChips(base) {
+    const opts = [
+      ["all", base.length],
+      ["yes", base.filter((r) => r.followedBy).length],
+      ["no", base.filter((r) => !r.followedBy).length],
+    ];
+    return h(
+      "div",
+      { class: "chips", role: "group", "aria-label": t("follow.label") },
+      opts.map(([key, count]) =>
+        h(
+          "button",
+          {
+            class: "chip",
+            "aria-pressed": String(state.follow === key),
+            onclick: () => {
+              state.follow = key;
+              state.page = 0;
+              renderList();
+            },
+          },
+          t("follow." + key),
+          h("span", { class: "chip-n" }, n(count))
+        )
+      )
+    );
+  }
+
   function matchesQuery(r) {
     const q = state.query.trim().toLowerCase().replace(/^@/, "");
     if (!q) return true;
@@ -719,8 +760,10 @@
     const groups = computeRows();
     if (!shownGroups(groups).includes(state.filter)) state.filter = "inactive";
     const allRows = groups[state.filter];
-    const rows = allRows.filter(matchesQuery);
+    const matched = allRows.filter(matchesQuery);
+    const rows = matched.filter(matchesFollow);
     const searching = state.query.trim() !== "";
+    const filtering = searching || state.follow !== "all";
     const selectable = SELECTABLE.has(state.filter);
     const pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
     state.page = Math.min(state.page, pages - 1);
@@ -742,7 +785,7 @@
       toolbar = h(
         "div",
         { class: "toolbar" },
-        h("span", { class: "num" }, searching ? t("toolbar.matches", { n: rows.length, sel }) : t("toolbar.selected", { sel, total: rows.length })),
+        h("span", { class: "num" }, filtering ? t("toolbar.matches", { n: rows.length, sel }) : t("toolbar.selected", { sel, total: rows.length })),
         h(
           "span",
           { class: "toolbar-actions" },
@@ -754,7 +797,7 @@
 
     const list = slice.length
       ? h("ul", { class: "list" }, slice.map((r) => renderRow(r, selectable)))
-      : h("div", { class: "empty" }, h("p", null, searching ? t("list.emptySearch", { q: state.query.trim() }) : t("list.emptyGroup")));
+      : h("div", { class: "empty" }, h("p", null, searching ? t("list.emptySearch", { q: state.query.trim() }) : state.follow !== "all" ? t("list.emptyFilter") : t("list.emptyGroup")));
 
     const pager =
       pages > 1
@@ -767,7 +810,7 @@
           )
         : null;
 
-    put(ui.listWrap, queueBanner(groups), h("div", { class: "hint" }, hints[state.filter]), toolbar, list, pager);
+    put(ui.listWrap, queueBanner(groups), allRows.length ? followChips(matched) : null, h("div", { class: "hint" }, hints[state.filter]), toolbar, list, pager);
     ui.body.scrollTop = scrollTop;
   }
 
@@ -961,6 +1004,7 @@
       state.filter = "inactive";
       state.page = 0;
       state.query = "";
+      state.follow = "all";
       resetSelection();
       state.busy = null;
       setStatus(t("status.scanDone", { n: users.length }), "ok");

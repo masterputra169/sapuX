@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.0
+
+- Follow-back filter chips in Review (All / Follows you / Doesn't follow) with counts. They only narrow the current view, like search; Select all and Clear act on the filtered rows.
+
 ## 2.1.0
 
 - One-way filter: optionally unfollow accounts that don't follow you back, even if active.

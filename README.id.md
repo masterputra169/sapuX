@@ -19,6 +19,7 @@ SapuX adalah ekstensi Chrome kecil yang men-scan akun yang kamu follow, mengelom
 - **Akun kecil.** Opsional: unfollow juga akun dengan followers di bawah N (bot, farm airdrop) walau masih aktif.
 - **Sepihak.** Opsional: unfollow juga akun yang tidak follow balik.
 - **Deteksi aktivitas diam-diam.** Kalau jumlah following sebuah akun berubah di antara dua scan, orangnya masih membuka X walau tidak posting, jadi dianggap aktif.
+- **Filter follow balik.** Chip di bawah kolom cari (Semua · Follow balik · Tidak follow balik) menyaring grup yang sedang dibuka, lengkap dengan jumlahnya.
 - **Perlindungan.** Whitelist, mutual, dan akun dengan followers di atas N tidak pernah disentuh. Tambah atau lepas akun dari whitelist dengan satu klik.
 - **Antrean yang bisa dilanjutkan.** Kalau jatah harian habis, kamu klik Hentikan, atau tab tertutup, sisa akun disimpan. Besok tinggal klik Lanjutkan.
 - **Notifikasi desktop** saat proses unfollow asli selesai atau berhenti.
@@ -53,7 +54,7 @@ Nama tab dalam Bahasa Indonesia: **Daftar**, **Riwayat**, **Aturan**.
    | Aktif | Masih posting | Tidak bisa dipilih |
    | Dilindungi | Whitelist, mutual, atau akun besar | Tidak bisa dipilih |
 
-3. Cek daftarnya. Cari nama atau @handle, klik baris untuk centang / hapus centang, atau klik **Lindungi** supaya akun masuk whitelist.
+3. Cek daftarnya. Cari nama atau @handle, saring dengan chip **Follow balik / Tidak follow balik**, klik baris untuk centang / hapus centang, atau klik **Lindungi** supaya akun masuk whitelist.
 4. Klik **Simulasi**: seluruh alur jalan tanpa mengirim unfollow, hasilnya masuk Riwayat.
 5. Kalau sudah yakin, matikan **Mode simulasi** di Aturan, lalu klik **Unfollow N**. Biarkan tab X terbuka; tombol **Hentikan** bisa dipakai kapan saja.
 6. Sisa akun (jatah habis, dihentikan, tab tertutup) muncul sebagai kartu antrean dengan tombol **Lanjutkan** dan **Buang**.

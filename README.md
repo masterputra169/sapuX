@@ -19,6 +19,7 @@ SapuX is a small Chrome extension that scans the accounts you follow, sorts them
 - **Small accounts.** Optionally sweep accounts under N followers (bots, airdrop farms) even if they still post.
 - **One-way.** Optionally sweep accounts that don't follow you back.
 - **Quiet activity detection.** If an account's following count changed between two scans, it is still opening X even without posting, so it counts as active.
+- **Follow-back filter.** Chips under the search box (All · Follows you · Doesn't follow) narrow whichever group you're viewing, with live counts.
 - **Protection.** Your keep list, mutuals and accounts above N followers are never touched. Add or remove anyone from the list with one click.
 - **Queue that resumes.** When the daily limit is hit, you press Stop, or the tab closes, the remaining accounts are saved. Resume tomorrow from where you stopped.
 - **Desktop notifications** when a live run finishes or stops.
@@ -53,7 +54,7 @@ Works in Chrome, Brave, Edge and other Chromium browsers.
    | Active | Still posting | Can't be selected |
    | Kept | Keep list, mutuals, or big accounts | Can't be selected |
 
-3. Go through the list. Search by name or @handle, click a row to tick or untick it, or click **Keep** to protect an account for good. Export a CSV if you want a record.
+3. Go through the list. Search by name or @handle, narrow it with the **Follows you / Doesn't follow** chips, click a row to tick or untick it, or click **Keep** to protect an account for good. Export a CSV if you want a record.
 4. Click **Simulate**. It runs the whole flow without sending a single unfollow and writes the result to History.
 5. When you're happy, turn off **Simulation mode** in Rules and click **Unfollow N**. Keep the X tab open; you can press **Stop** at any time.
 6. Anything left over (daily limit, Stop, closed tab) shows up as a queue card with **Resume** and **Discard**.
