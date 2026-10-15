@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.3.0
+
+- Custom confirmation dialog inside the panel replaces the browser's native pop-up (start, resume and delete-all). Shows what will happen at a glance: accounts now, accounts going to the queue, estimated time, the mix of groups and any warnings.
+- Live runs open with focus on Cancel, so a stray Enter never starts unfollowing. Esc or clicking outside cancels; focus stays inside the dialog.
+
 ## 2.2.0
 
 - Follow-back filter chips in Review (All / Follows you / Doesn't follow) with counts. They only narrow the current view, like search; Select all and Clear act on the filtered rows.

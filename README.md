@@ -25,7 +25,7 @@ SapuX is a small Chrome extension that scans the accounts you follow, sorts them
 - **Desktop notifications** when a live run finishes or stops.
 - **Backup and restore** your rules and keep list as a JSON file.
 - **History with undo.** Every unfollow is logged; follow anyone again with one click. CSV export for scans and history.
-- **Simulation mode on by default**, plus a confirmation before every run.
+- **Simulation mode on by default**, plus a clear confirmation before every run: how many now, how many go to the queue, estimated time and warnings.
 - English and Bahasa Indonesia, light and dark theme (follows X).
 
 ## Install

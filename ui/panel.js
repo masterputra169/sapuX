@@ -276,6 +276,44 @@
     .backup { display: flex; flex-wrap: wrap; gap: 8px; }
     .danger-zone { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-top: 18px; border-top: 1px solid var(--line); }
 
+    /* ---------- dialog konfirmasi (pengganti window.confirm) ---------- */
+    .scrim { position: absolute; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; padding: 12px;
+      background: rgba(6, 7, 12, .58); backdrop-filter: blur(3px); }
+    .root[data-theme="light"] .scrim { background: rgba(23, 25, 35, .3); }
+    .dialog { width: 100%; max-height: 100%; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding: 18px;
+      background: var(--bg); border-radius: 14px; box-shadow: var(--shadow); outline: none; scrollbar-width: thin; }
+    @media (prefers-reduced-motion: no-preference) {
+      .scrim { animation: scrim-in .16s ease both; }
+      .dialog { animation: dialog-in .22s var(--ease-out) both; }
+      @keyframes scrim-in { from { opacity: 0; } }
+      @keyframes dialog-in { from { opacity: 0; transform: translateY(10px) scale(.98); } }
+    }
+    .dlg-head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: start; }
+    .dlg-icon { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; }
+    .dlg-icon.danger { background: color-mix(in srgb, var(--danger) 16%, transparent); color: var(--danger); }
+    .dlg-icon.amber { background: color-mix(in srgb, var(--amber) 18%, transparent); color: var(--accent-text); }
+    .dlg-eyebrow { font-size: 11.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); }
+    .dlg-title { margin: 2px 0 4px; font-size: 18px; font-weight: 650; letter-spacing: -.015em; line-height: 1.25; text-wrap: balance; }
+    .dlg-sub { margin: 0; font-size: 13px; color: var(--muted); text-wrap: pretty; }
+    .dlg-stats { display: grid; gap: 8px; }
+    .stat { min-width: 0; padding: 10px 12px; border-radius: 10px; background: var(--raised); box-shadow: 0 0 0 1px var(--line); }
+    .stat-label { font-size: 11.5px; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .stat-value { font-size: 19px; font-weight: 650; letter-spacing: -.02em; font-variant-numeric: tabular-nums; line-height: 1.3; }
+    .stat-note { font-size: 11.5px; color: var(--faint); text-wrap: pretty; }
+    .stat.danger .stat-value { color: var(--danger); }
+    .dlg-section { display: flex; flex-direction: column; gap: 6px; }
+    .dlg-label { font-size: 12px; font-weight: 600; color: var(--muted); }
+    .dlg-mix { display: flex; flex-wrap: wrap; gap: 6px; }
+    .mix { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 999px; font-size: 12.5px; color: var(--muted); box-shadow: inset 0 0 0 1px var(--line); }
+    .mix b { color: var(--text); font-weight: 650; font-variant-numeric: tabular-nums; }
+    .dlg-warn { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
+    .dlg-warn li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: start; padding: 9px 11px; border-radius: 10px; font-size: 12.5px;
+      background: color-mix(in srgb, var(--amber) 10%, transparent); color: var(--text); text-wrap: pretty; }
+    .dlg-warn .ico { color: var(--accent-text); margin-top: 1px; }
+    .dlg-foot { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; font-size: 12px; color: var(--faint); text-wrap: pretty; }
+    .dlg-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: 8px; padding-top: 2px; }
+    .dlg-actions .btn { width: 100%; }
+
     @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
   `;
 
@@ -587,6 +625,7 @@
         throw e;
       }
     }
+    if (!open) activeDialog?.close(false);
     ui.panel.hidden = !open;
     ui.fab.hidden = open;
     if (open) {
@@ -940,6 +979,110 @@
     refreshList();
   }
 
+  // ---------- dialog konfirmasi ----------
+  // Pengganti window.confirm: dirender di dalam panel (Shadow DOM), mengikuti tema & bahasa SapuX.
+  let activeDialog = null;
+
+  /**
+   * Buka dialog konfirmasi. Hasil: Promise<boolean> (true = dikonfirmasi).
+   * Esc / klik di luar / Batal = false. Fokus dikunci di dalam dialog dan dikembalikan saat ditutup.
+   */
+  function confirmDialog({ tone = "amber", iconName = "info", eyebrow = "", title, sub = "", body = [], confirmLabel, confirmIcon = null, confirmClass = "primary", focus = "confirm" }) {
+    activeDialog?.close(false);
+    return new Promise((resolve) => {
+      const previousFocus = shadow.activeElement;
+      const cancelBtn = h("button", { class: "btn", type: "button", onclick: () => close(false) }, t("dlg.cancel"));
+      const okBtn = h("button", { class: "btn " + confirmClass, type: "button", onclick: () => close(true) }, confirmIcon ? icon(confirmIcon, 16) : null, confirmLabel);
+      const box = h(
+        "div",
+        { class: "dialog", role: "alertdialog", "aria-modal": "true", "aria-labelledby": "sapux-dlg-title", "aria-describedby": "sapux-dlg-sub", tabindex: "-1" },
+        h(
+          "div",
+          { class: "dlg-head" },
+          h("span", { class: `dlg-icon ${tone}` }, icon(iconName, 20)),
+          h("div", null, eyebrow ? h("div", { class: "dlg-eyebrow" }, eyebrow) : null, h("h2", { class: "dlg-title", id: "sapux-dlg-title" }, title), sub ? h("p", { class: "dlg-sub", id: "sapux-dlg-sub" }, sub) : null)
+        ),
+        body,
+        h("div", { class: "dlg-actions" }, cancelBtn, okBtn)
+      );
+      const layer = h("div", { class: "scrim", onmousedown: (e) => { if (e.target === layer) close(false); } }, box);
+      layer.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          e.stopPropagation();
+          close(false);
+        } else if (e.key === "Tab") {
+          const items = [...box.querySelectorAll("button:not(:disabled), a[href]")];
+          const first = items[0];
+          const last = items[items.length - 1];
+          if (e.shiftKey && shadow.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          } else if (!e.shiftKey && shadow.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      });
+      ui.panel.append(layer);
+      (focus === "cancel" ? cancelBtn : okBtn).focus();
+
+      function close(result) {
+        if (!layer.isConnected) return;
+        layer.remove();
+        activeDialog = null;
+        if (previousFocus?.isConnected) previousFocus.focus();
+        resolve(result);
+      }
+      activeDialog = { close };
+    });
+  }
+
+  function statTile(label, value, note, cls = "") {
+    return h("div", { class: "stat" + (cls ? " " + cls : "") }, h("div", { class: "stat-label" }, label), h("div", { class: "stat-value" }, value), note ? h("div", { class: "stat-note" }, note) : null);
+  }
+
+  /** Isi dialog sebelum unfollow/simulasi: angka utama, komposisi antrean, peringatan. */
+  function runDialogBody({ batch, rest, s, live }) {
+    const loc = I18n.locale();
+    const byStatus = (status) => batch.filter((r) => r.status === status).length;
+    const parts = CANDIDATES.map((g) => [g, byStatus(g)]).filter(([, c]) => c > 0);
+    const body = [];
+
+    if (live) {
+      const left = Math.max(0, s.dailyCap - state.daily.count);
+      const tiles = [statTile(t("dlg.stat.now"), batch.length.toLocaleString(loc), t("dlg.stat.nowNote", { left, cap: s.dailyCap }), "danger")];
+      if (rest > 0) tiles.push(statTile(t("dlg.stat.queue"), rest.toLocaleString(loc), t("dlg.stat.queueNote")));
+      // Perkiraan dibulatkan ke menit supaya muat di kartu ("≈ 1 h 38 min", bukan "1 h 37 min 52 s").
+      const secs = C.estimateSeconds(batch.length, s);
+      const eta = secs >= 60 ? "≈ " + I18n.duration(Math.round(secs / 60) * 60) : I18n.duration(secs);
+      tiles.push(statTile(t("dlg.stat.time"), eta, t("dlg.stat.timeNote")));
+      body.push(h("div", { class: "dlg-stats", style: `grid-template-columns: repeat(${tiles.length - 1}, minmax(0, 1fr)) minmax(0, 1.5fr)` }, tiles));
+    }
+
+    if (parts.length) {
+      body.push(
+        h(
+          "div",
+          { class: "dlg-section" },
+          h("div", { class: "dlg-label" }, t("dlg.includes")),
+          h("div", { class: "dlg-mix" }, parts.map(([g, c]) => h("span", { class: "mix" }, h("i", { class: `dot ${g}` }), t("group." + g), h("b", null, c.toLocaleString(loc)))))
+        )
+      );
+    }
+
+    if (live) {
+      const warnings = [
+        byStatus("small") ? t("confirm.small", { n: byStatus("small"), f: n(s.smallMaxFollowers) }) : "",
+        byStatus("oneway") ? t("confirm.oneway", { n: byStatus("oneway") }) : "",
+        byStatus("unknown") ? t("confirm.unknown", { n: byStatus("unknown") }) : "",
+      ].filter(Boolean);
+      if (warnings.length) body.push(h("ul", { class: "dlg-warn" }, warnings.map((w) => h("li", null, icon("warning", 15), h("span", null, w)))));
+      body.push(h("div", { class: "dlg-foot" }, icon("arrow-u-up-left", 14), h("span", null, t("confirm.undo"))));
+    }
+    return body;
+  }
+
   // ---------- bar aksi (footer) ----------
   function renderActions() {
     const groups = state.tab === "clean" ? computeRows() : null;
@@ -1031,23 +1174,22 @@
     const remaining = s.dryRun ? queue.length : Math.max(0, s.dailyCap - state.daily.count);
     if (remaining === 0) return setStatus(t("status.capReached", { cap: s.dailyCap }), "error");
     const count = Math.min(queue.length, remaining);
-    const unknownCount = queue.slice(0, count).filter((r) => r.status === "unknown").length;
-    const smallCount = queue.slice(0, count).filter((r) => r.status === "small").length;
-    const onewayCount = queue.slice(0, count).filter((r) => r.status === "oneway").length;
-
-    const message = s.dryRun
-      ? t("confirm.sim", { n: count })
-      : [
-          t("confirm.live", { n: count }) + (count < queue.length ? "\n" + t("confirm.liveRest", { rest: queue.length - count, cap: s.dailyCap }) : ""),
-          smallCount ? t("confirm.small", { n: smallCount, f: n(s.smallMaxFollowers) }) : "",
-          onewayCount ? t("confirm.oneway", { n: onewayCount }) : "",
-          unknownCount ? t("confirm.unknown", { n: unknownCount }) : "",
-          t("confirm.eta", { t: I18n.duration(C.estimateSeconds(count, s)) }),
-          t("confirm.undo"),
-        ]
-          .filter(Boolean)
-          .join("\n\n");
-    if (!window.confirm(message)) return;
+    const resuming = Array.isArray(explicitQueue);
+    const live = !s.dryRun;
+    const ok = await confirmDialog({
+      tone: live ? "danger" : "amber",
+      iconName: live ? "user-minus" : "play",
+      eyebrow: t(live ? (resuming ? "dlg.eyebrow.resume" : "dlg.eyebrow.live") : "dlg.eyebrow.sim"),
+      title: t(live ? "dlg.live.title" : "dlg.sim.title", { n: count.toLocaleString(I18n.locale()) }),
+      sub: t(live ? "dlg.live.sub" : "dlg.sim.sub"),
+      body: runDialogBody({ batch: queue.slice(0, count), rest: queue.length - count, s, live }),
+      confirmLabel: t(live ? "btn.unfollow" : "btn.simulate", { n: count }),
+      confirmIcon: live ? "user-minus" : "play",
+      confirmClass: live ? "danger" : "primary",
+      // Mode asli: fokus awal di Batal, jadi Enter yang tidak sengaja tidak langsung memulai unfollow.
+      focus: live ? "cancel" : "confirm",
+    });
+    if (!ok || state.busy || state.stale) return;
 
     state.busy = "unfollow";
     state.abort = new AbortController();
@@ -1366,7 +1508,16 @@
           type: "button",
           disabled: Boolean(state.busy),
           onclick: async () => {
-            if (!window.confirm(t("confirm.wipe"))) return;
+            const ok = await confirmDialog({
+              tone: "danger",
+              iconName: "warning",
+              title: t("dlg.wipe.title"),
+              sub: t("dlg.wipe.sub"),
+              confirmLabel: t("rules.wipe"),
+              confirmClass: "danger",
+              focus: "cancel",
+            });
+            if (!ok) return;
             const lang = I18n.getLang();
             await Store.clearAll();
             await Store.saveSettings({ lang });
@@ -1421,6 +1572,7 @@
 
   function showStale() {
     state.stale = true;
+    activeDialog?.close(false);
     state.abort?.abort();
     ui.fabText.textContent = t("stale.btn");
     ui.fab.title = t("stale.fabTitle");
@@ -1489,7 +1641,9 @@
   });
 
   window.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !ui.panel.hidden && e.composedPath().includes(host)) toggle(false);
+    if (e.key !== "Escape" || ui.panel.hidden || !e.composedPath().includes(host)) return;
+    if (activeDialog) activeDialog.close(false);
+    else toggle(false);
   });
 
   window.addEventListener("beforeunload", (e) => {
