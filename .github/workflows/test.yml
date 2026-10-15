@@ -1,0 +1,26 @@
+name: test
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Unit tests
+        run: node --test
+      - name: Syntax check
+        run: for f in background.js lib/*.js ui/*.js; do node --check "$f"; done
+      - name: Manifest is valid JSON
+        run: node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8'))"

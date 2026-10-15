@@ -1,0 +1,14 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Packaged builds
+*.zip
+*.crx
+*.pem
+
+# Exports you may download while testing
+sapux-*.csv
+sapux-backup-*.json

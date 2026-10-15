@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="SapuX">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F7C557"/>
+      <stop offset="1" stop-color="#EDA92E"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="30" fill="url(#bg)"/>
+  <rect x="1.5" y="1.5" width="125" height="125" rx="28.5" fill="none" stroke="#ffffff" stroke-opacity=".28" stroke-width="3"/>
+  <!-- garis kedua huruf X -->
+  <line x1="91" y1="37" x2="37" y2="91" stroke="#1C1F3A" stroke-width="13" stroke-linecap="round"/>
+  <!-- sapu: gagang + ikatan + kepala lebar, diputar membentuk garis pertama huruf X -->
+  <g transform="rotate(-45 64 64)">
+    <line x1="64" y1="16" x2="64" y2="60" stroke="#1C1F3A" stroke-width="12" stroke-linecap="round"/>
+    <rect x="52" y="60" width="24" height="9" rx="3" fill="#1C1F3A"/>
+    <path d="M53 72 H75 L92 106 Q94 112 88 112 H40 Q34 112 36 106 Z" fill="#1C1F3A"/>
+    <g stroke="#F2B544" stroke-width="3.4" stroke-linecap="round">
+      <line x1="54" y1="88" x2="49" y2="113"/>
+      <line x1="61" y1="88" x2="59.5" y2="113"/>
+      <line x1="67" y1="88" x2="68.5" y2="113"/>
+      <line x1="74" y1="88" x2="79" y2="113"/>
+    </g>
+  </g>
+</svg>
