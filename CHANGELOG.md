@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.4.0
+
+- Location rules: SapuX guesses where an account is based from its bio location (city, country name or flag emoji) and the language of its last post, with no extra requests.
+  - Keep accounts from chosen countries or regions (new "kept" reason).
+  - Put chosen countries or regions at the front of the unfollow queue, optionally pre-selecting only those.
+  - Location never makes an account a candidate by itself.
+- Location tag on each row with the source in its tooltip; search matches bio location and country; CSV gains location columns.
+- README screenshots refreshed.
+
 ## 2.3.0
 
 - Custom confirmation dialog inside the panel replaces the browser's native pop-up (start, resume and delete-all). Shows what will happen at a glance: accounts now, accounts going to the queue, estimated time, the mix of groups and any warnings.

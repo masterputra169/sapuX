@@ -28,7 +28,8 @@ test("parseWhitelist menerima @, tanpa @, URL, koma", () => {
 
 test("classify: inactive / active / unknown + shield", () => {
   const opts = { thresholdDays: 180, whitelist: new Set(["vip"]), protectMutuals: true };
-  assert.deepEqual(C.classify({ handle: "a", lastTweetAt: daysAgo(200) }, opts, NOW), { status: "inactive", shield: null, days: 200, quiet: false });
+  const r0 = C.classify({ handle: "a", lastTweetAt: daysAgo(200) }, opts, NOW);
+  assert.deepEqual({ status: r0.status, shield: r0.shield, days: r0.days, quiet: r0.quiet, geo: r0.geo, focus: r0.focus }, { status: "inactive", shield: null, days: 200, quiet: false, geo: null, focus: false });
   assert.equal(C.classify({ handle: "a", lastTweetAt: daysAgo(180) }, opts, NOW).status, "inactive");
   assert.equal(C.classify({ handle: "a", lastTweetAt: daysAgo(179) }, opts, NOW).status, "active");
   assert.equal(C.classify({ handle: "a", lastTweetAt: null }, opts, NOW).status, "unknown");
@@ -157,4 +158,37 @@ test("mergeScan menandai akun yang following-nya berubah", () => {
   assert.equal(by["3"].quietActiveAt, "2026-09-01T00:00:00.000Z");
   assert.equal(by["4"].quietActiveAt, undefined);
   assert.equal(by["5"].quietActiveAt, undefined);
+});
+
+test("normalizeUser membawa kolom lokasi bio dan bahasa posting terakhir", () => {
+  const u = C.normalizeUser({ id_str: "1", screen_name: "x", location: "Jakarta", status: { created_at: "Wed Oct 10 20:19:24 +0000 2018", lang: "in" } });
+  assert.equal(u.location, "Jakarta");
+  assert.equal(u.lang, "in");
+  assert.equal(C.normalizeUser({ id_str: "1", screen_name: "x" }).location, "");
+});
+
+test("classify: lindungi lokasi tertentu, tandai lokasi prioritas", () => {
+  const opts = { thresholdDays: 180, whitelist: new Set(), protectMutuals: true, protectMinFollowers: 1000, keepRegions: new Set(["ID", "sea"]), focusRegions: new Set(["IN"]) };
+  const old = daysAgo(400);
+  const id = C.classify({ handle: "a", location: "Bandung, Jawa Barat", lastTweetAt: old }, opts, NOW);
+  assert.equal(id.status, "inactive");
+  assert.equal(id.shield, "region");
+  assert.equal(C.classify({ handle: "a", location: "Manila", lastTweetAt: old }, opts, NOW).shield, "region"); // lewat wilayah "sea"
+  assert.equal(C.classify({ handle: "a", lang: "in", lastTweetAt: old }, opts, NOW).shield, "region"); // lewat bahasa
+  const india = C.classify({ handle: "b", location: "Mumbai", lastTweetAt: old }, opts, NOW);
+  assert.equal(india.shield, null);
+  assert.equal(india.focus, true);
+  // lokasi tidak pernah menjadikan akun aktif sebagai kandidat
+  assert.equal(C.classify({ handle: "b", location: "Mumbai", lastTweetAt: daysAgo(2) }, opts, NOW).status, "active");
+  // whitelist & mutual tetap jadi alasan utama; followers besar setelah lokasi
+  assert.equal(C.classify({ handle: "m", followedBy: true, location: "Jakarta", lastTweetAt: old }, opts, NOW).shield, "mutual");
+  assert.equal(C.classify({ handle: "big", followers: 5000, location: "Delhi", lastTweetAt: old }, opts, NOW).shield, "followers");
+});
+
+test("sanitizeSettings: daftar lokasi hanya menerima kode yang dikenal", () => {
+  const s = C.sanitizeSettings({ keepRegions: ["ID", "sea", "ID", "<script>", 5, "XX"], focusRegions: "IN", focusOnly: 1 });
+  assert.deepEqual(s.keepRegions, ["ID", "sea"]);
+  assert.deepEqual(s.focusRegions, []);
+  assert.equal(s.focusOnly, true);
+  assert.deepEqual(C.sanitizeSettings({}).keepRegions, []);
 });

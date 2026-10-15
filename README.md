@@ -10,7 +10,7 @@ SapuX is a small Chrome extension that scans the accounts you follow, sorts them
 
 <p>
   <img src="docs/screenshots/review.png" width="300" alt="Review tab: accounts grouped by activity">
-  <img src="docs/screenshots/one-way-quiet.png" width="300" alt="One-way group with an account flagged as active quietly">
+  <img src="docs/screenshots/confirm-dialog.png" width="300" alt="Confirmation before a live run: accounts now, estimated time, warnings">
 </p>
 
 ## Features
@@ -20,7 +20,8 @@ SapuX is a small Chrome extension that scans the accounts you follow, sorts them
 - **One-way.** Optionally sweep accounts that don't follow you back.
 - **Quiet activity detection.** If an account's following count changed between two scans, it is still opening X even without posting, so it counts as active.
 - **Follow-back filter.** Chips under the search box (All · Follows you · Doesn't follow) narrow whichever group you're viewing, with live counts.
-- **Protection.** Your keep list, mutuals and accounts above N followers are never touched. Add or remove anyone from the list with one click.
+- **Location rules.** SapuX guesses where an account is based from the location in its bio (city, country or flag) and the language of its last post. Keep whole countries or regions (say Indonesia or Southeast Asia), and send others to the front of the queue (say India). Location alone never makes an account a candidate.
+- **Protection.** Your keep list, mutuals, places you keep and accounts above N followers are never touched. Add or remove anyone from the list with one click.
 - **Queue that resumes.** When the daily limit is hit, you press Stop, or the tab closes, the remaining accounts are saved. Resume tomorrow from where you stopped.
 - **Desktop notifications** when a live run finishes or stops.
 - **Backup and restore** your rules and keep list as a JSON file.
@@ -91,6 +92,7 @@ Rescan every few weeks. Quiet activity detection needs two scans to compare.
 
 ## Limitations
 
+- Location is a guess. The bio location is free text the owner writes, and post language is not the same as country (English tells nothing, so it is ignored). X's official "Account based in" data is not used yet because it needs one extra request per account.
 - SapuX uses X's internal web API (the same calls x.com makes), not the paid official API. If X changes it, scans can fail until SapuX is updated. Automation always carries some risk under X's rules, so keep the daily limit reasonable.
 - "Active" is based on the latest post, reply or repost X returns. Likes don't count. X doesn't expose "last seen"; quiet activity detection is the closest signal.
 - Chrome slows timers in background tabs. Runs stay safe, just slower.
@@ -101,6 +103,7 @@ Rescan every few weeks. Quiet activity detection needs two scans to compare.
 manifest.json        MV3 manifest; name and description come from _locales
 _locales/            extension name and description (en, id)
 background.js        captures the Authorization header, shows notifications
+lib/geo.js           location guess from bio text, flags and post language
 lib/core.js          pure logic: classification, quiet activity, whitelist, CSV, settings
 lib/i18n.js          every UI string (English default + Bahasa Indonesia)
 lib/api.js           calls to X endpoints
@@ -122,7 +125,7 @@ No build step and no `npm install`: the code you read is the code Chrome runs.
 node --test
 ```
 
-28 tests cover classification (inactive, small, one-way, quiet activity, protection), scan merging, settings limits, CSV escaping, the unfollow engine (daily limit, stop on 429/403, skipping deleted accounts, Stop button, simulation sends nothing) and translation completeness. They run on every push through GitHub Actions.
+37 tests cover classification (inactive, small, one-way, quiet activity, protection, location), location guessing, scan merging, settings limits, CSV escaping, the unfollow engine (daily limit, stop on 429/403, skipping deleted accounts, Stop button, simulation sends nothing) and translation completeness. They run on every push through GitHub Actions.
 
 ## License
 

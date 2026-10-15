@@ -9,8 +9,9 @@ SapuX adalah ekstensi Chrome kecil yang men-scan akun yang kamu follow, mengelom
 [English](README.md)
 
 <p>
-  <img src="docs/screenshots/review.png" width="300" alt="Tab Daftar">
-  <img src="docs/screenshots/indonesian-light.png" width="300" alt="Tampilan Bahasa Indonesia, tema terang">
+  <img src="docs/screenshots/review.png" width="260" alt="Tab Daftar">
+  <img src="docs/screenshots/indonesian-light.png" width="260" alt="Tampilan Bahasa Indonesia, tema terang">
+  <img src="docs/screenshots/confirm-dialog.png" width="260" alt="Konfirmasi sebelum unfollow asli">
 </p>
 
 ## Fitur
@@ -20,12 +21,13 @@ SapuX adalah ekstensi Chrome kecil yang men-scan akun yang kamu follow, mengelom
 - **Sepihak.** Opsional: unfollow juga akun yang tidak follow balik.
 - **Deteksi aktivitas diam-diam.** Kalau jumlah following sebuah akun berubah di antara dua scan, orangnya masih membuka X walau tidak posting, jadi dianggap aktif.
 - **Filter follow balik.** Chip di bawah kolom cari (Semua · Follow balik · Tidak follow balik) menyaring grup yang sedang dibuka, lengkap dengan jumlahnya.
+- **Aturan lokasi.** SapuX menebak asal akun dari lokasi di bio (kota, negara, atau bendera) dan bahasa posting terakhir. Lindungi negara atau wilayah tertentu (misalnya Indonesia atau Asia Tenggara), dan dahulukan yang lain di antrean (misalnya India). Lokasi saja tidak pernah membuat akun jadi kandidat unfollow.
 - **Perlindungan.** Whitelist, mutual, dan akun dengan followers di atas N tidak pernah disentuh. Tambah atau lepas akun dari whitelist dengan satu klik.
 - **Antrean yang bisa dilanjutkan.** Kalau jatah harian habis, kamu klik Hentikan, atau tab tertutup, sisa akun disimpan. Besok tinggal klik Lanjutkan.
 - **Notifikasi desktop** saat proses unfollow asli selesai atau berhenti.
 - **Backup dan restore** aturan + whitelist sebagai file JSON.
 - **Riwayat dengan undo.** Setiap unfollow tercatat; follow lagi dengan satu klik. Export CSV untuk hasil scan dan riwayat.
-- **Mode simulasi aktif secara default**, plus konfirmasi sebelum setiap proses.
+- **Mode simulasi aktif secara default**, plus pop-up konfirmasi sebelum setiap proses: jumlah akun, sisa antrean, perkiraan waktu, dan peringatan.
 - English dan Bahasa Indonesia (tombol EN / ID), tema terang dan gelap (mengikuti X).
 
 ## Instalasi

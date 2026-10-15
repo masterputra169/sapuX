@@ -16,6 +16,7 @@
   const Store = globalThis.SapuStore;
   const Engine = globalThis.SapuEngine;
   const I18n = globalThis.SapuI18n;
+  const Geo = globalThis.SapuGeo;
   const { icon } = globalThis.SapuIcons;
   const t = (key, params) => I18n.t(key, params);
   const n = (value) => I18n.count(value);
@@ -185,6 +186,8 @@
     .meta { display: flex; align-items: center; gap: 4px 10px; flex-wrap: wrap; font-size: 12.5px; color: var(--faint); }
     .tag { font-size: 11px; font-weight: 500; padding: 1px 7px; border-radius: 999px; background: var(--tag-bg); color: var(--muted); }
     .tag.keep { background: color-mix(in srgb, var(--c-protected) 16%, transparent); color: var(--ok); }
+    .tag.geo { display: inline-flex; align-items: center; gap: 4px; }
+    .tag.geo.focus { background: color-mix(in srgb, var(--danger) 14%, transparent); color: var(--text); }
     .tag.quiet { background: color-mix(in srgb, var(--c-active) 18%, transparent); color: var(--text); }
     .side { display: flex; align-items: center; gap: 4px; }
     .age { text-align: right; min-width: 64px; }
@@ -274,6 +277,12 @@
     .modecard.live { box-shadow: 0 0 0 1px color-mix(in srgb, var(--danger) 55%, transparent); }
     .formactions { display: flex; justify-content: flex-end; }
     .backup { display: flex; flex-wrap: wrap; gap: 8px; }
+    .geo-picks { display: flex; flex-direction: column; gap: 8px; }
+    .geo-row { display: flex; flex-direction: column; gap: 6px; }
+    .geo-row-label { font-size: 11.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--faint); }
+    .chip.danger[aria-pressed="true"] { background: color-mix(in srgb, var(--danger) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 60%, transparent); }
+    .geo-note { margin: -8px 0 0; font-size: 12.5px; color: var(--faint); }
+    .geo-note.warn { color: var(--accent-text); }
     .danger-zone { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-top: 18px; border-top: 1px solid var(--line); }
 
     /* ---------- dialog konfirmasi (pengganti window.confirm) ---------- */
@@ -348,6 +357,34 @@
   function fmtDateTime(iso) {
     return new Date(iso).toLocaleString(I18n.locale(), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
   }
+  /** Nama tempat untuk kode negara ("ID") atau wilayah ("sea"), sesuai bahasa antarmuka. */
+  function placeName(code) {
+    if (!code) return "";
+    if (Geo.REGIONS.includes(code)) return t("geo." + code);
+    try {
+      return new Intl.DisplayNames([I18n.locale()], { type: "region" }).of(code) || code;
+    } catch {
+      return code;
+    }
+  }
+  function geoLabel(geo) {
+    if (!geo) return "";
+    return geo.country ? `${Geo.flagEmoji(geo.country)} ${placeName(geo.country)}` : placeName(geo.region);
+  }
+  function geoSourceText(geo) {
+    if (!geo) return "";
+    if (geo.source === "lang") {
+      let lang = geo.hint === "in" ? "id" : geo.hint;
+      try {
+        lang = new Intl.DisplayNames([I18n.locale()], { type: "language" }).of(lang) || lang;
+      } catch {
+        /* biarkan kode bahasa */
+      }
+      return t("geo.fromLang", { lang });
+    }
+    return t(geo.source === "flag" ? "geo.fromFlag" : "geo.fromBio", { text: geo.hint });
+  }
+
   function handleLink(handle) {
     return HANDLE_RE.test(handle)
       ? h("a", { href: `https://x.com/${handle}`, target: "_blank", rel: "noopener noreferrer", onclick: (e) => e.stopPropagation() }, "@" + handle)
@@ -573,6 +610,8 @@
       smallMaxFollowers: s.smallMaxFollowers,
       unfollowNonFollowers: s.unfollowNonFollowers,
       detectQuietActivity: s.detectQuietActivity,
+      keepRegions: new Set(s.keepRegions),
+      focusRegions: new Set(s.focusRegions),
     };
     const now = Date.now();
     const groups = Object.fromEntries(GROUPS.map((g) => [g, []]));
@@ -594,11 +633,16 @@
   /** Default: "tidak aktif" + "kecil" + "sepihak" terpilih; "tanpa data" tidak. */
   function resetSelection() {
     const groups = computeRows();
-    state.selected = new Set(groups ? [...groups.inactive, ...groups.small, ...groups.oneway].map((r) => r.id) : []);
+    let rows = groups ? [...groups.inactive, ...groups.small, ...groups.oneway] : [];
+    // "Hanya pilih otomatis kandidat dari lokasi prioritas"
+    if (state.settings.focusOnly && state.settings.focusRegions.length) rows = rows.filter((r) => r.focus);
+    state.selected = new Set(rows.map((r) => r.id));
   }
 
+  /** Antrean unfollow: kandidat dari lokasi prioritas paling depan, sisanya mengikuti urutan grup. */
   function queueFrom(groups) {
-    return CANDIDATES.flatMap((g) => groups[g]).filter((r) => state.selected.has(r.id));
+    const picked = CANDIDATES.flatMap((g) => groups[g]).filter((r) => state.selected.has(r.id));
+    return [...picked.filter((r) => r.focus), ...picked.filter((r) => !r.focus)];
   }
 
   /** Grup opsional (kecil, sepihak) hanya tampil kalau aturannya aktif atau masih ada isinya. */
@@ -790,7 +834,12 @@
   function matchesQuery(r) {
     const q = state.query.trim().toLowerCase().replace(/^@/, "");
     if (!q) return true;
-    return r.handle.toLowerCase().includes(q) || String(r.name).toLowerCase().includes(q);
+    return (
+      r.handle.toLowerCase().includes(q) ||
+      String(r.name).toLowerCase().includes(q) ||
+      String(r.location || "").toLowerCase().includes(q) ||
+      (r.geo != null && geoLabel(r.geo).toLowerCase().includes(q))
+    );
   }
 
   function renderList() {
@@ -815,7 +864,7 @@
       oneway: t("hint.oneway"),
       unknown: t("hint.unknown"),
       active: t("hint.active"),
-      protected: s.protectMinFollowers ? t("hint.protectedBig", { n: n(s.protectMinFollowers) }) : t("hint.protected"),
+      protected: (s.protectMinFollowers ? t("hint.protectedBig", { n: n(s.protectMinFollowers) }) : t("hint.protected")) + (s.keepRegions.length ? t("hint.protectedRegion") : ""),
     };
 
     let toolbar = null;
@@ -924,6 +973,10 @@
     if (r.shield === "whitelist") tags.push(h("span", { class: "tag keep" }, t("tag.whitelist")));
     if (r.shield === "followers") tags.push(h("span", { class: "tag keep" }, t("tag.bigFollowers")));
     if (r.followedBy) tags.push(h("span", { class: r.shield === "mutual" ? "tag keep" : "tag" }, t("tag.mutual")));
+    if (r.geo) {
+      const cls = "tag geo" + (r.shield === "region" ? " keep" : r.focus && !r.shield ? " focus" : "");
+      tags.push(h("span", { class: cls, title: geoSourceText(r.geo) }, geoLabel(r.geo)));
+    }
     if (r.isProtected) tags.push(h("span", { class: "tag" }, t("tag.private")));
     if (r.quiet) tags.push(h("span", { class: "tag quiet", title: fmtDate(r.quietActiveAt) }, t("tag.quiet")));
 
@@ -1078,6 +1131,8 @@
         byStatus("unknown") ? t("confirm.unknown", { n: byStatus("unknown") }) : "",
       ].filter(Boolean);
       if (warnings.length) body.push(h("ul", { class: "dlg-warn" }, warnings.map((w) => h("li", null, icon("warning", 15), h("span", null, w)))));
+      const focusCount = batch.filter((r) => r.focus).length;
+      if (focusCount) body.push(h("div", { class: "dlg-foot" }, icon("globe-simple", 14), h("span", null, t("dlg.focus", { n: focusCount }))));
       body.push(h("div", { class: "dlg-foot" }, icon("arrow-u-up-left", 14), h("span", null, t("confirm.undo"))));
     }
     return body;
@@ -1306,6 +1361,11 @@
       { label: "followers", get: (r) => r.followers },
       { label: "follows_you", get: (r) => (r.followedBy ? "yes" : "no") },
       { label: "active_quietly", get: (r) => (r.quiet ? "yes" : "no") },
+      { label: "bio_location", get: (r) => r.location || "" },
+      { label: "guessed_country", get: (r) => r.geo?.country || "" },
+      { label: "guessed_region", get: (r) => r.geo?.region || "" },
+      { label: "location_source", get: (r) => r.geo?.source || "" },
+      { label: "priority_place", get: (r) => (r.focus ? "yes" : "no") },
       { label: "selected", get: (r) => (state.selected.has(r.id) ? "yes" : "no") },
       { label: "url", get: (r) => `https://x.com/${r.handle}` },
     ]);
@@ -1436,6 +1496,7 @@
         sw("detectQuietActivity", t("rules.quiet"), t("rules.quiet.help")),
         field(t("rules.whitelist"), f.whitelist, t("rules.whitelist.help"))
       ),
+      geoSection(),
       h(
         "section",
         { class: "group" },
@@ -1450,10 +1511,64 @@
       h("div", { class: "formactions" }, h("button", { class: "btn primary", type: "submit", disabled: Boolean(state.busy) }, icon("check-circle", 16), t("rules.save")))
     );
 
+    /** Bagian Lokasi: dua set chip (lindungi / unfollow duluan) + sakelar "hanya pilih lokasi prioritas". */
+    function geoSection() {
+      f.keepRegions = new Set(s.keepRegions);
+      f.focusRegions = new Set(s.focusRegions);
+      const picker = (set, other, tone, label) => {
+        const chip = (code) => {
+          const btn = h(
+            "button",
+            {
+              type: "button",
+              class: "chip" + (tone ? " " + tone : ""),
+              "aria-pressed": String(set.has(code)),
+              onclick: () => {
+                const on = !set.has(code);
+                if (on) {
+                  set.add(code);
+                  // satu tempat tidak bisa sekaligus dilindungi dan diprioritaskan
+                  if (other.delete(code)) form.querySelectorAll(`.chip[data-code="${code}"]`).forEach((b) => b !== btn && b.setAttribute("aria-pressed", "false"));
+                } else set.delete(code);
+                btn.setAttribute("aria-pressed", String(on));
+              },
+              "data-code": code,
+            },
+            Geo.OPTION_COUNTRIES.includes(code) ? Geo.flagEmoji(code) + " " + placeName(code) : placeName(code)
+          );
+          return btn;
+        };
+        return h(
+          "div",
+          { class: "geo-picks", role: "group", "aria-label": label },
+          h("div", { class: "geo-row" }, h("span", { class: "geo-row-label" }, t("rules.geo.countries")), h("div", { class: "chips" }, Geo.OPTION_COUNTRIES.map(chip))),
+          h("div", { class: "geo-row" }, h("span", { class: "geo-row-label" }, t("rules.geo.regions")), h("div", { class: "chips" }, Geo.OPTION_REGIONS.map(chip)))
+        );
+      };
+      const users = state.scan?.users || [];
+      const hasData = users.some((u) => "location" in u);
+      const found = hasData ? users.filter((u) => Geo.detectGeo(u)).length : 0;
+      return h(
+        "section",
+        { class: "group" },
+        h("h3", { class: "group-title" }, t("rules.geo")),
+        h("p", { class: "group-note" }, t("rules.geo.note")),
+        users.length
+          ? h("p", { class: "geo-note" + (hasData ? "" : " warn") }, hasData ? t("rules.geo.coverage", { n: n(found), total: n(users.length) }) : t("rules.geo.rescan"))
+          : null,
+        field(t("rules.geo.keep"), picker(f.keepRegions, f.focusRegions, "", t("rules.geo.keep")), t("rules.geo.keep.help")),
+        field(t("rules.geo.focus"), picker(f.focusRegions, f.keepRegions, "danger", t("rules.geo.focus")), t("rules.geo.focus.help")),
+        sw("focusOnly", t("rules.geo.focusOnly"), t("rules.geo.focusOnly.help"))
+      );
+    }
+
     async function saveSettings(e) {
       e.preventDefault();
       const next = {
         lang: state.settings.lang,
+        keepRegions: [...f.keepRegions],
+        focusRegions: [...f.focusRegions],
+        focusOnly: f.focusOnly.checked,
         thresholdDays: f.thresholdDays.value,
         protectMutuals: f.protectMutuals.checked,
         protectMinFollowers: f.protectMinFollowers.value,
