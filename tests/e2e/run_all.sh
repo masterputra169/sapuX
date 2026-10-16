@@ -25,13 +25,14 @@ serve() {
 run() {
   echo "=== $1"
   rm -rf "$WORK"/profile* "$WORK"/ext*
-  if ! python3 -I "$HERE/$1" "$WORK" "$ROOT" 2>&1 | tee "$WORK/out.log"; [ "${PIPESTATUS[0]}" -ne 0 ]; then
-    :
-  else
+  set +e
+  python3 -I "$HERE/$1" "$WORK" "$ROOT" 2>&1 | tee "$WORK/out.log"
+  local rc=${PIPESTATUS[0]}
+  set -e
+  if [ "$rc" -ne 0 ]; then
     # GitHub Actions: tampilkan ringkasan kegagalan sebagai anotasi supaya terbaca tanpa membuka log.
     if [ -n "${GITHUB_ACTIONS:-}" ]; then
-      msg="$(grep -v '^\s*$' "$WORK/out.log" | tail -n 25 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')"
-      echo "::error title=$1 failed::$msg"
+      echo "::error title=$1 failed::$(grep -v '^[[:space:]]*$' "$WORK/out.log" | tail -n 25 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')"
       echo "::error title=$1 server log::$(tail -n 10 "$WORK/server.log" | awk '{printf "%s%%0A", $0}')"
     fi
     exit 1
