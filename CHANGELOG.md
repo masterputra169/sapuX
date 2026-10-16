@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.1.0
+
+Ready for public use.
+
+- Releases are built by GitHub Actions from the tagged source, with a SHA-256 checksum and a signed build-provenance attestation (see SECURITY.md to verify a download). The ZIP contains runtime files only.
+- Raising the daily limit above 150 now asks for confirmation, with advice to ramp up slowly.
+- The open/closed state of Rules sections is stored in the extension's own storage instead of x.com's localStorage, so the site can't read anything from SapuX. The old key is removed.
+- Explicit strict extension CSP and a minimum Chrome version (116).
+- New PRIVACY.md, SECURITY.md and a disclaimer in the README. Dependabot keeps CI actions up to date.
+
 ## 3.0.0
 
 - Panel code split into files by responsibility (ui/base, styles, dialog, shell, review, actions, history, health, rules, geo-ui, panel). Same behavior, much easier to change safely.

@@ -236,6 +236,21 @@ function renderSettings() {
       batchPauseMinMin: f.batchPauseMinMin.value,
       batchPauseMaxMin: f.batchPauseMaxMin.value,
     };
+    // Menaikkan batas harian melewati batas aman: minta konfirmasi yang jelas dulu.
+    const nextCap = C.sanitizeSettings(next).dailyCap;
+    if (nextCap > SAFE_DAILY_CAP && nextCap > state.settings.dailyCap) {
+      const ok = await confirmDialog({
+        tone: "danger",
+        iconName: "warning",
+        title: t("dlg.risky.title", { n: nextCap }),
+        sub: t("dlg.risky.sub", { safe: SAFE_DAILY_CAP }),
+        body: [h("ul", { class: "dlg-warn" }, ["dlg.risky.1", "dlg.risky.2", "dlg.risky.3"].map((k) => h("li", null, icon("warning", 15), h("span", null, t(k)))))],
+        confirmLabel: t("dlg.risky.ok", { n: nextCap }),
+        confirmClass: "danger",
+        focus: "cancel",
+      });
+      if (!ok) return;
+    }
     try {
       state.settings = await Store.saveSettings(next);
     } catch (err) {

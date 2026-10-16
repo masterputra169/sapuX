@@ -64,6 +64,33 @@ with sync_playwright() as pw:
     assert classes()[3] == "ok", list(zip(classes(), items()))
     page.wait_for_timeout(300); page.screenshot(path=str(HERE / "health.png"), clip={"x": 812, "y": 6, "width": 462, "height": 888})
     print("4. After X teaches the new request ID: all checks pass")
+
+    # raising the daily limit above 150 needs an explicit confirmation; cancel keeps the old value
+    page.locator(P + 'details[data-fold="speed"]').evaluate("d => d.open = true")
+    page.locator(P + "input[type=number]").nth(3).fill("250")
+    page.get_by_role("button", name="Save rules").click()
+    d = page.locator(P + ".dialog")
+    expect(d.locator(".dlg-title")).to_have_text("Raise the daily limit to 250?")
+    focused = page.evaluate("document.querySelector('#sapux-host').shadowRoot.activeElement.textContent")
+    assert focused == "Cancel", focused
+    d.get_by_role("button", name="Cancel").click()
+    page.get_by_role("tab", name="Review").click()
+    expect(page.locator(P + ".mode")).to_be_visible()
+    page.get_by_role("tab", name="Rules").click()
+    page.locator(P + 'details[data-fold="speed"]').evaluate("d => d.open = true")
+    assert page.locator(P + "input[type=number]").nth(3).input_value() == "80"
+    page.locator(P + "input[type=number]").nth(3).fill("250")
+    page.get_by_role("button", name="Save rules").click()
+    d.get_by_role("button", name="Use 250 per day").click()
+    expect(page.locator(P + ".status")).to_have_text("Rules saved. Selection rebuilt.")
+    page.locator(P + "input[type=number]").nth(3).fill("240"); page.get_by_role("button", name="Save rules").click()
+    expect(page.locator(P + ".dialog")).to_have_count(0)  # lowering never asks
+    print("5. High daily limit asks first (focus on Cancel); lowering doesn't")
+
+    # nothing from SapuX ends up in x.com's own storage
+    keys = page.evaluate("Object.keys(localStorage).filter(k => /sapux/i.test(k))")
+    assert keys == [], keys
+    print("6. No SapuX keys in x.com localStorage")
     bad = [e for e in errors if "Uncaught" in e or ".js" in e]; assert not bad, bad
     ctx.close()
 print("HEALTH E2E PASSED")

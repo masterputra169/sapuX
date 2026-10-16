@@ -34,13 +34,15 @@ SapuX adalah ekstensi Chrome kecil yang men-scan akun yang kamu follow, mengelom
 
 ## Instalasi
 
-1. Download repo ini (Code → Download ZIP) lalu ekstrak, atau `git clone`.
+> **Ambil SapuX hanya dari [Releases](https://github.com/masterputra169/sapuX/releases) repo ini.** SapuX gratis dan tidak punya versi berbayar. Salinan yang dibagikan di tempat lain bisa saja sudah dimodifikasi untuk mencuri sesi X kamu. Cara memeriksa keaslian file ada di [SECURITY.md](SECURITY.md).
+
+1. Download `sapux-<versi>.zip` dari [release](https://github.com/masterputra169/sapuX/releases) terbaru, lalu ekstrak.
 2. Buka `chrome://extensions`, aktifkan **Developer mode** di kanan atas.
-3. Klik **Load unpacked**, pilih folder yang berisi `manifest.json`.
+3. Klik **Load unpacked**, pilih folder hasil ekstrak (yang berisi `manifest.json`).
 4. Buka https://x.com, login, scroll timeline beberapa detik supaya sesi tertangkap.
 5. Klik tombol **SapuX** kuning di kiri bawah, atau ikon ekstensi di toolbar.
 
-Bisa dipakai di Chrome, Brave, Edge, dan browser Chromium lain.
+Bisa dipakai di Chrome 116 ke atas, Brave, Edge, dan browser Chromium lain. Untuk update, ekstrak versi baru ke folder lama lalu klik **Reload** di `chrome://extensions`; aturan dan riwayat tetap tersimpan.
 
 ## Cara pakai
 
@@ -101,4 +103,8 @@ Tes end-to-end memuat SapuX ke Chromium sungguhan dengan x.com tiruan, lalu meng
 
 [MIT](LICENSE). Font Geist (SIL OFL) dan ikon Phosphor (MIT) dibundel dengan lisensinya masing-masing.
 
-SapuX tidak berafiliasi dengan X Corp.
+## Penafian
+
+SapuX adalah software gratis dan open source yang diberikan apa adanya, tanpa jaminan (lihat [LICENSE](LICENSE)). Unfollow otomatis bisa melanggar aturan X, dan X bisa membatasi, mengunci, atau menangguhkan akun yang dianggap spam. Penggunaan adalah tanggung jawab masing-masing: mulai dari mode simulasi, pakai batas harian yang rendah, dan berhenti kalau X memberi peringatan. SapuX tidak berafiliasi dengan, didukung, atau disponsori oleh X Corp.
+
+Privasi: [PRIVACY.md](PRIVACY.md) · Laporan keamanan: [SECURITY.md](SECURITY.md)

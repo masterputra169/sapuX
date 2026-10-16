@@ -12,3 +12,4 @@ Thumbs.db
 # Exports you may download while testing
 sapux-*.csv
 sapux-backup-*.json
+dist/

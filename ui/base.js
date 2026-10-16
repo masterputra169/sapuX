@@ -28,6 +28,9 @@ const CANDIDATES = ["inactive", "small", "oneway", "unknown"]; // urutan antrean
 const GROUPS = ["inactive", "small", "oneway", "unknown", "active", "protected"];
 const OPTIONAL_GROUPS = { small: "smallMaxFollowers", oneway: "unfollowNonFollowers" };
 
+/** Batas harian di atas angka ini dianggap berisiko dan butuh konfirmasi. */
+const SAFE_DAILY_CAP = 150;
+
 /** Profil kecepatan di Aturan. "Safe" = nilai default. */
 const PACES = [
   { id: "safe", values: { minDelaySec: 20, maxDelaySec: 45, batchSize: 10, batchPauseMinMin: 3, batchPauseMaxMin: 6 } },
@@ -126,21 +129,31 @@ const state = {
 };
 I18n.setLang(state.settings.lang);
 
-/** Bagian Aturan yang terbuka diingat per browser (kenyamanan saja; aman kalau storage tidak tersedia). */
+/**
+ * Bagian Aturan yang terbuka diingat di penyimpanan ekstensi (bukan localStorage milik x.com,
+ * supaya situs tidak bisa membaca apa pun dari SapuX). Dimuat async saat panel dipasang.
+ */
 function loadFolds() {
+  return new Set(["who"]);
+}
+async function restoreFolds() {
   try {
-    const saved = JSON.parse(localStorage.getItem("sapux:folds") || "null");
-    if (Array.isArray(saved)) return new Set(saved.filter((x) => typeof x === "string"));
+    const r = await chrome.storage.local.get("ui:folds");
+    if (Array.isArray(r["ui:folds"])) state.rulesOpen = new Set(r["ui:folds"].filter((x) => typeof x === "string").slice(0, 20));
+  } catch {
+    /* pakai default */
+  }
+  try {
+    localStorage.removeItem("sapux:folds"); // bersihkan sisa versi 3.0.0
   } catch {
     /* abaikan */
   }
-  return new Set(["who"]);
 }
 function saveFolds() {
   try {
-    localStorage.setItem("sapux:folds", JSON.stringify([...state.rulesOpen]));
+    chrome.storage.local.set({ "ui:folds": [...state.rulesOpen] }).catch(() => {});
   } catch {
-    /* abaikan */
+    /* konteks ekstensi hilang: abaikan */
   }
 }
 

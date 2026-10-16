@@ -33,15 +33,15 @@ SapuX is a small Chrome extension that scans the accounts you follow, sorts them
 
 ## Install
 
-SapuX is not on the Chrome Web Store, so you load it yourself:
+> **Get SapuX only from this repository's [Releases](https://github.com/masterputra169/sapuX/releases).** It is free and has no paid version. Copies shared elsewhere may be modified to steal your X session. See [SECURITY.md](SECURITY.md) for how to verify a download.
 
-1. Download this repository (Code → Download ZIP) and unzip it, or `git clone` it.
+1. Download `sapux-<version>.zip` from the latest [release](https://github.com/masterputra169/sapuX/releases) and unzip it.
 2. Open `chrome://extensions` and turn on **Developer mode** (top right).
-3. Click **Load unpacked** and pick the folder that contains `manifest.json`.
+3. Click **Load unpacked** and pick the unzipped folder (the one that contains `manifest.json`).
 4. Open https://x.com, log in and scroll the timeline for a few seconds so SapuX can pick up your session.
 5. Click the yellow **SapuX** button at the bottom left of the page, or the extension icon in the toolbar.
 
-Works in Chrome, Brave, Edge and other Chromium browsers.
+Works in Chrome 116+, Brave, Edge and other Chromium browsers. To update, unzip the new release over the old folder and click **Reload** in `chrome://extensions`; your rules and history are kept.
 
 ## How to use
 
@@ -147,4 +147,8 @@ The end-to-end tests load SapuX into a real Chromium against a fake x.com served
 
 [MIT](LICENSE). Bundled third-party assets: Geist font under the SIL Open Font License (`fonts/OFL-Geist.txt`), Phosphor icons under MIT (`ui/LICENSE-phosphor.txt`).
 
-SapuX is not affiliated with X Corp.
+## Disclaimer
+
+SapuX is free, open-source software provided as is, without warranty (see [LICENSE](LICENSE)). Automating unfollows can go against X's rules, and X may limit, lock or suspend accounts it considers spammy. You are responsible for how you use it: start in simulation mode, keep the daily limit low, and stop if X warns you. SapuX is not affiliated with, endorsed by or sponsored by X Corp.
+
+Privacy: [PRIVACY.md](PRIVACY.md) · Security reports: [SECURITY.md](SECURITY.md)

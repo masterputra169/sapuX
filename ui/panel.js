@@ -64,6 +64,7 @@ function mountSapuX() {
   renderChrome();
 
   // Bahasa tersimpan dimuat sejak awal supaya tombol melayang langsung memakai bahasa yang benar.
+  restoreFolds();
   Store.getSettings()
     .then((s) => {
       state.settings = s;
