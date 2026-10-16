@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.5.0
+
+- Official location from X: Rules → Location → "Check N with X" reads "Account based in" from each candidate's About page.
+  - Only candidates (plus accounts kept by a guessed location) are checked, one request at a time with random pauses; SapuX reads X's rate-limit headers and waits when the limit runs low.
+  - Results are saved per account and re-checked after 90 days at most; Stop keeps progress.
+  - X's data replaces the bio/language guess. Accounts X marks as possibly inaccurate (VPN or proxy) still count for "keep" but never for "unfollow first".
+  - When X changes the request ID, SapuX learns the new one the next time you open any profile's About page.
+- Location tags show a check mark for X's data and a warning sign when X flags it.
+
 ## 2.4.0
 
 - Location rules: SapuX guesses where an account is based from its bio location (city, country name or flag emoji) and the language of its last post, with no extra requests.

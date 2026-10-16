@@ -11,12 +11,19 @@
 
 const CAPTURE_URLS = ["https://x.com/i/api/*", "https://api.x.com/*"];
 let cachedBearer = null;
+let lastAboutQuery = null;
 
 // storage.session hanya bisa diakses service worker (bukan oleh halaman/content script).
 chrome.storage.session.setAccessLevel?.({ accessLevel: "TRUSTED_CONTEXTS" }).catch(() => {});
 
 chrome.webRequest.onBeforeSendHeaders.addListener(
   (details) => {
+    // Catat ID query "About this account" terbaru yang dipakai web X (bisa berubah saat X deploy).
+    const about = details.url.match(/\/graphql\/([A-Za-z0-9_-]{10,40})\/AboutAccountQuery/);
+    if (about && about[1] !== lastAboutQuery) {
+      lastAboutQuery = about[1];
+      chrome.storage.local.set({ "gql:AboutAccountQuery": { id: about[1], at: new Date().toISOString() } }).catch(() => {});
+    }
     const header = details.requestHeaders?.find((h) => h.name.toLowerCase() === "authorization");
     const value = header?.value;
     if (value && value.startsWith("Bearer ") && value !== cachedBearer) {

@@ -56,3 +56,31 @@ test("flagEmoji membalik kode negara", () => {
   assert.equal(G.flagEmoji("ID"), "🇮🇩");
   assert.equal(G.flagEmoji("sea"), "");
 });
+
+test("Account based in dari X: nama negara & wilayah", () => {
+  assert.deepEqual(G.basedInToGeo("Indonesia"), { country: "ID", region: "sea" });
+  assert.deepEqual(G.basedInToGeo("United States"), { country: "US", region: "americas" });
+  assert.deepEqual(G.basedInToGeo("South Asia"), { country: null, region: "south-asia" });
+  assert.deepEqual(G.basedInToGeo("Southeast Asia"), { country: null, region: "sea" });
+  assert.deepEqual(G.basedInToGeo("Europe"), { country: null, region: "europe" });
+  assert.equal(G.basedInToGeo("Turkey").country, "TR");
+  assert.equal(G.basedInToGeo("Hong Kong").country, "HK");
+  assert.equal(G.basedInToGeo(""), null);
+});
+
+test("data X menang atas bio & bahasa, dan menandai VPN", () => {
+  const g = G.detectGeo({ basedIn: "India", basedAccurate: true, location: "Jakarta", lang: "in" });
+  assert.deepEqual(g, { country: "IN", region: "south-asia", source: "x", hint: "India", accurate: true });
+  const vpn = G.detectGeo({ basedIn: "India", basedAccurate: false, location: "Jakarta" });
+  assert.equal(vpn.accurate, false);
+  assert.equal(G.trustedForFocus(vpn), false);
+  assert.equal(G.trustedForFocus(G.detectGeo({ location: "Mumbai" })), true);
+});
+
+test("parseAbout membaca jawaban AboutAccountQuery", () => {
+  const ok = { data: { user_result_by_screen_name: { result: { __typename: "User", about_profile: { account_based_in: "Indonesia", location_accurate: true, source: "Indonesia Android App" } } } } };
+  assert.deepEqual(G.parseAbout(ok), { based: "Indonesia", accurate: true });
+  assert.deepEqual(G.parseAbout({ data: { user_result_by_screen_name: { result: { __typename: "UserUnavailable" } } } }), { none: true });
+  assert.deepEqual(G.parseAbout({ data: {} }), { none: true });
+  assert.deepEqual(G.parseAbout(null), { none: true });
+});

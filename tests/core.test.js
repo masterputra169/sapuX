@@ -192,3 +192,11 @@ test("sanitizeSettings: daftar lokasi hanya menerima kode yang dikenal", () => {
   assert.equal(s.focusOnly, true);
   assert.deepEqual(C.sanitizeSettings({}).keepRegions, []);
 });
+
+test("classify: lokasi resmi yang ditandai VPN tidak dipakai untuk prioritas, tapi tetap melindungi", () => {
+  const opts = { thresholdDays: 180, whitelist: new Set(), protectMutuals: true, protectMinFollowers: 0, keepRegions: new Set(["ID"]), focusRegions: new Set(["IN"]) };
+  const old = daysAgo(400);
+  assert.equal(C.classify({ handle: "a", basedIn: "India", basedAccurate: false, lastTweetAt: old }, opts, NOW).focus, false);
+  assert.equal(C.classify({ handle: "a", basedIn: "India", basedAccurate: true, location: "Jakarta", lastTweetAt: old }, opts, NOW).focus, true);
+  assert.equal(C.classify({ handle: "a", basedIn: "Indonesia", basedAccurate: false, lastTweetAt: old }, opts, NOW).shield, "region");
+});

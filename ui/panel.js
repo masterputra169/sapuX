@@ -187,6 +187,7 @@
     .tag { font-size: 11px; font-weight: 500; padding: 1px 7px; border-radius: 999px; background: var(--tag-bg); color: var(--muted); }
     .tag.keep { background: color-mix(in srgb, var(--c-protected) 16%, transparent); color: var(--ok); }
     .tag.geo { display: inline-flex; align-items: center; gap: 4px; }
+    .tag.geo.official .ico { opacity: .8; }
     .tag.geo.focus { background: color-mix(in srgb, var(--danger) 14%, transparent); color: var(--text); }
     .tag.quiet { background: color-mix(in srgb, var(--c-active) 18%, transparent); color: var(--text); }
     .side { display: flex; align-items: center; gap: 4px; }
@@ -283,6 +284,7 @@
     .chip.danger[aria-pressed="true"] { background: color-mix(in srgb, var(--danger) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 60%, transparent); }
     .geo-note { margin: -8px 0 0; font-size: 12.5px; color: var(--faint); }
     .geo-note.warn { color: var(--accent-text); }
+    .field .geo-note { margin: 0; }
     .danger-zone { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-top: 18px; border-top: 1px solid var(--line); }
 
     /* ---------- dialog konfirmasi (pengganti window.confirm) ---------- */
@@ -369,10 +371,12 @@
   }
   function geoLabel(geo) {
     if (!geo) return "";
-    return geo.country ? `${Geo.flagEmoji(geo.country)} ${placeName(geo.country)}` : placeName(geo.region);
+    if (geo.country) return `${Geo.flagEmoji(geo.country)} ${placeName(geo.country)}`;
+    return geo.region ? placeName(geo.region) : String(geo.hint || "");
   }
   function geoSourceText(geo) {
     if (!geo) return "";
+    if (geo.source === "x") return t(geo.accurate === false ? "geo.fromXVpn" : "geo.fromX", { text: geo.hint });
     if (geo.source === "lang") {
       let lang = geo.hint === "in" ? "id" : geo.hint;
       try {
@@ -412,6 +416,7 @@
     daily: { count: 0 },
     log: [],
     queue: null, // { savedAt, ids: [...] } sisa antrean unfollow asli
+    about: {}, // hasil cek "Account based in" ke X, per id akun
     filter: "inactive",
     query: "",
     follow: "all", // filter tampilan: "all" | "yes" (follow balik) | "no" (tidak follow balik)
@@ -522,7 +527,7 @@
     ui.fill.style.width = frac == null ? "0" : `${Math.round(Math.min(1, Math.max(0, frac)) * 100)}%`;
     ui.counter.textContent = progress && progress.total ? `${progress.index}/${progress.total}` : "";
     if (state.busy === "scan") ui.fabText.textContent = t("fab.scanning");
-    else if (state.busy === "unfollow" && progress?.total) ui.fabText.textContent = `${progress.index}/${progress.total}`;
+    else if ((state.busy === "unfollow" || state.busy === "geo") && progress?.total) ui.fabText.textContent = `${progress.index}/${progress.total}`;
     else if (!state.busy && !state.stale) ui.fabText.textContent = "SapuX";
     syncFoot();
   }
@@ -542,12 +547,14 @@
       state.scan = null;
       state.log = [];
       state.queue = null;
+      state.about = {};
       return;
     }
     state.scan = await Store.getScan(state.owner.key);
     state.daily = await Store.getDaily(state.owner.key);
     state.log = await Store.getLog(state.owner.key);
     state.queue = await Store.getQueue(state.owner.key);
+    state.about = (await Store.getAbout(state.owner.key)) || {};
     resetSelection();
     if (previous) {
       // Akun yang sudah ada sebelumnya memakai pilihan lama; akun baru memakai pilihan default.
@@ -615,7 +622,9 @@
     };
     const now = Date.now();
     const groups = Object.fromEntries(GROUPS.map((g) => [g, []]));
-    for (const u of state.scan.users) {
+    for (const scanned of state.scan.users) {
+      const a = state.about[scanned.id];
+      const u = a && a.based ? { ...scanned, basedIn: a.based, basedAccurate: a.accurate } : scanned;
       const c = C.classify(u, opts, now);
       const row = { ...u, ...c };
       if (c.shield) groups.protected.push(row);
@@ -975,7 +984,8 @@
     if (r.followedBy) tags.push(h("span", { class: r.shield === "mutual" ? "tag keep" : "tag" }, t("tag.mutual")));
     if (r.geo) {
       const cls = "tag geo" + (r.shield === "region" ? " keep" : r.focus && !r.shield ? " focus" : "");
-      tags.push(h("span", { class: cls, title: geoSourceText(r.geo) }, geoLabel(r.geo)));
+      const mark = r.geo.source === "x" ? icon(r.geo.accurate === false ? "warning" : "check-circle", 11) : null;
+      tags.push(h("span", { class: cls + (r.geo.source === "x" ? " official" : ""), title: geoSourceText(r.geo) }, mark, geoLabel(r.geo)));
     }
     if (r.isProtected) tags.push(h("span", { class: "tag" }, t("tag.private")));
     if (r.quiet) tags.push(h("span", { class: "tag quiet", title: fmtDate(r.quietActiveAt) }, t("tag.quiet")));
@@ -1365,6 +1375,8 @@
       { label: "guessed_country", get: (r) => r.geo?.country || "" },
       { label: "guessed_region", get: (r) => r.geo?.region || "" },
       { label: "location_source", get: (r) => r.geo?.source || "" },
+      { label: "x_account_based_in", get: (r) => r.basedIn || "" },
+      { label: "x_location_accurate", get: (r) => (r.basedIn ? (r.basedAccurate === false ? "no" : "yes") : "") },
       { label: "priority_place", get: (r) => (r.focus ? "yes" : "no") },
       { label: "selected", get: (r) => (state.selected.has(r.id) ? "yes" : "no") },
       { label: "url", get: (r) => `https://x.com/${r.handle}` },
@@ -1547,7 +1559,12 @@
       };
       const users = state.scan?.users || [];
       const hasData = users.some((u) => "location" in u);
-      const found = hasData ? users.filter((u) => Geo.detectGeo(u)).length : 0;
+      const found = hasData
+        ? users.filter((u) => {
+            const ab = state.about[u.id];
+            return Geo.detectGeo(ab && ab.based ? { ...u, basedIn: ab.based, basedAccurate: ab.accurate } : u);
+          }).length
+        : 0;
       return h(
         "section",
         { class: "group" },
@@ -1556,6 +1573,7 @@
         users.length
           ? h("p", { class: "geo-note" + (hasData ? "" : " warn") }, hasData ? t("rules.geo.coverage", { n: n(found), total: n(users.length) }) : t("rules.geo.rescan"))
           : null,
+        (ui.geoOfficial = h("div", { class: "field" })) && renderGeoOfficial() && ui.geoOfficial,
         field(t("rules.geo.keep"), picker(f.keepRegions, f.focusRegions, "", t("rules.geo.keep")), t("rules.geo.keep.help")),
         field(t("rules.geo.focus"), picker(f.focusRegions, f.keepRegions, "danger", t("rules.geo.focus")), t("rules.geo.focus.help")),
         sw("focusOnly", t("rules.geo.focusOnly"), t("rules.geo.focusOnly.help"))
@@ -1647,6 +1665,92 @@
     put(ui.body, form, backup, danger);
   }
 
+  // ---------- lokasi resmi dari X ("Account based in") ----------
+  const GEO_RECHECK_MS = 90 * C.DAY_MS; // data lokasi jarang berubah: cek ulang paling cepat 90 hari
+
+  /** Kandidat unfollow (termasuk yang dilindungi hanya karena tebakan lokasi) yang perlu/pernah dicek. */
+  function geoTargets() {
+    const groups = computeRows();
+    if (!groups) return { all: [], pending: [] };
+    const all = [...CANDIDATES.flatMap((g) => groups[g]), ...groups.protected.filter((r) => r.shield === "region")].filter((r) => HANDLE_RE.test(r.handle));
+    const now = Date.now();
+    const pending = all.filter((r) => {
+      const a = state.about[r.id];
+      return !a || !a.at || now - Date.parse(a.at) > GEO_RECHECK_MS;
+    });
+    // kandidat dari lokasi prioritas dan yang tebakannya lemah (bahasa) dicek duluan
+    pending.sort((a, b) => Number(b.focus) - Number(a.focus) || Number(!a.geo) - Number(!b.geo));
+    return { all, pending };
+  }
+
+  /** Isi blok "Lokasi resmi dari X" di Aturan; digambar ulang di tempat saat proses berjalan. */
+  function renderGeoOfficial() {
+    if (!ui.geoOfficial) return false;
+    const { all, pending } = geoTargets();
+    const checked = all.length - pending.length;
+    const busy = state.busy === "geo";
+    const est = pending.length > 1 ? t("rules.geo.eta", { t: I18n.duration(pending.length * 2.6) }) : "";
+    const button = busy
+      ? h("button", { class: "btn small", type: "button", onclick: stop }, icon("stop", 14), t("rules.geo.stop"))
+      : h("button", { class: "btn small", type: "button", disabled: Boolean(state.busy) || !pending.length, onclick: startGeoCheck }, icon("globe-simple", 14), t("rules.geo.check", { n: n(pending.length) }));
+    put(
+      ui.geoOfficial,
+      h("span", { class: "lbl" }, t("rules.geo.official")),
+      h("span", { class: "help" }, t("rules.geo.official.help")),
+      all.length ? h("span", { class: "geo-note" }, pending.length ? t("rules.geo.checked", { n: n(checked), total: n(all.length) }) + (est ? " " + est : "") : t("rules.geo.allChecked", { total: n(all.length) })) : null,
+      state.scan ? h("div", { class: "backup" }, button) : null
+    );
+    return true;
+  }
+
+  async function startGeoCheck() {
+    if (state.busy || !state.scan) return;
+    const owner = state.owner;
+    const { pending } = geoTargets();
+    if (!pending.length) return;
+    state.busy = "geo";
+    state.abort = new AbortController();
+    renderGeoOfficial();
+    renderActions();
+    let unsaved = 0;
+    const flush = async () => {
+      if (!unsaved) return;
+      unsaved = 0;
+      await Store.saveAbout(owner.key, state.about);
+    };
+    try {
+      const res = await Engine.checkLocations({
+        accounts: pending,
+        signal: state.abort.signal,
+        onProgress: (p) => setStatus(p.message, "", p),
+        onResult: async (user, result) => {
+          state.about[user.id] = { ...result, at: new Date().toISOString() };
+          unsaved += 1;
+          if (unsaved >= 10) await flush();
+          renderGeoOfficial();
+        },
+      });
+      await flush();
+      state.busy = null;
+      if (res.reason === "finished") setStatus(t("status.geoDone", { n: res.done }), "ok");
+      else if (res.reason === "query") setStatus(t("status.geoQuery"), "error");
+      else setStatus(t("status.geoFailed", { e: Api.describeError(res.error) }), "error");
+    } catch (e) {
+      await flush().catch(() => {});
+      state.busy = null;
+      if (isContextGone(e)) return showStale();
+      setStatus(e.name === "AbortError" ? t("status.geoStopped") : t("status.geoFailed", { e: Api.describeError(e) }), e.name === "AbortError" ? "" : "error");
+    } finally {
+      state.busy = null;
+      state.abort = null;
+      if (!state.stale) {
+        renderGeoOfficial();
+        renderSummary();
+        renderActions();
+      }
+    }
+  }
+
   // ---------- backup aturan + whitelist ----------
   function exportBackup() {
     const data = { app: "SapuX", version: chrome.runtime.getManifest().version, exportedAt: new Date().toISOString(), settings: state.settings };
@@ -1725,7 +1829,7 @@
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== "local" || !state.owner || ui.panel.hidden || state.stale) return;
     const k = state.owner.key;
-    const relevant = ["settings", `scan:${k}`, `log:${k}`, `daily:${k}`, `queue:${k}`].some((key) => key in changes);
+    const relevant = ["settings", `scan:${k}`, `log:${k}`, `daily:${k}`, `queue:${k}`, `about:${k}`].some((key) => key in changes);
     // Saat proses berjalan di tab ini, state di memori sudah yang terbaru dan onItemDone sudah menggambar ulang.
     if (!relevant || state.busy) return;
     clearTimeout(storageTimer);
