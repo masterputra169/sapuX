@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.6.1
+
+- Fix: no "Cannot read properties of undefined (reading 'onChanged')" error when an X tab loads while the extension is being reloaded or updated. The panel now stays out of the way until the page is refreshed.
+
 ## 2.6.0
 
 - New Location option, on by default: "Only use X's official data for unfollow first". Guesses from bio or post language still protect accounts but never move them to the front of the queue.

@@ -9,6 +9,9 @@
 (function () {
   "use strict";
   if (window.top !== window || globalThis.__sapuxPanel) return;
+  // Skrip bisa tersuntik tepat saat ekstensi sedang di-reload/di-update: API chrome sudah tidak ada.
+  // Jangan memasang apa pun; refresh halaman akan memuat versi baru dengan normal.
+  if (!globalThis.chrome?.runtime?.id || !chrome.storage?.local) return;
   globalThis.__sapuxPanel = true;
 
   const C = globalThis.SapuCore;
@@ -1834,7 +1837,7 @@
     .catch(() => {});
 
   let storageTimer = null;
-  chrome.storage.onChanged.addListener((changes, area) => {
+  chrome.storage?.onChanged?.addListener((changes, area) => {
     if (area !== "local" || !state.owner || ui.panel.hidden || state.stale) return;
     const k = state.owner.key;
     const relevant = ["settings", `scan:${k}`, `log:${k}`, `daily:${k}`, `queue:${k}`, `about:${k}`].some((key) => key in changes);
@@ -1856,7 +1859,7 @@
     if (document.visibilityState === "visible" && !ui.panel.hidden && !state.busy && !state.stale) refreshView({ quiet: true }).catch(() => {});
   });
 
-  chrome.runtime.onMessage.addListener((msg) => {
+  chrome.runtime?.onMessage?.addListener((msg) => {
     if (msg?.type === "sapux:toggle") toggle(ui.panel.hidden).catch(() => {});
   });
 
