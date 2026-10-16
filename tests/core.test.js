@@ -200,3 +200,14 @@ test("classify: lokasi resmi yang ditandai VPN tidak dipakai untuk prioritas, ta
   assert.equal(C.classify({ handle: "a", basedIn: "India", basedAccurate: true, location: "Jakarta", lastTweetAt: old }, opts, NOW).focus, true);
   assert.equal(C.classify({ handle: "a", basedIn: "Indonesia", basedAccurate: false, lastTweetAt: old }, opts, NOW).shield, "region");
 });
+
+test("classify: prioritas hanya dari data resmi X (default)", () => {
+  assert.equal(C.sanitizeSettings({}).focusOfficialOnly, true);
+  assert.equal(C.sanitizeSettings({ focusOfficialOnly: false }).focusOfficialOnly, false);
+  const opts = { thresholdDays: 180, whitelist: new Set(), protectMutuals: true, protectMinFollowers: 0, keepRegions: new Set(["ID"]), focusRegions: new Set(["IN"]), focusOfficialOnly: true };
+  const old = daysAgo(400);
+  assert.equal(C.classify({ handle: "a", location: "Mumbai", lastTweetAt: old }, opts, NOW).focus, false); // tebakan bio
+  assert.equal(C.classify({ handle: "a", basedIn: "India", lastTweetAt: old }, opts, NOW).focus, true); // data X
+  assert.equal(C.classify({ handle: "a", location: "Jakarta", lastTweetAt: old }, opts, NOW).shield, "region"); // tebakan tetap melindungi
+  assert.equal(C.classify({ handle: "a", location: "Mumbai", lastTweetAt: old }, { ...opts, focusOfficialOnly: false }, NOW).focus, true);
+});

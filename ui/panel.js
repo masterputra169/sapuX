@@ -619,6 +619,7 @@
       detectQuietActivity: s.detectQuietActivity,
       keepRegions: new Set(s.keepRegions),
       focusRegions: new Set(s.focusRegions),
+      focusOfficialOnly: s.focusOfficialOnly,
     };
     const now = Date.now();
     const groups = Object.fromEntries(GROUPS.map((g) => [g, []]));
@@ -1576,6 +1577,7 @@
         (ui.geoOfficial = h("div", { class: "field" })) && renderGeoOfficial() && ui.geoOfficial,
         field(t("rules.geo.keep"), picker(f.keepRegions, f.focusRegions, "", t("rules.geo.keep")), t("rules.geo.keep.help")),
         field(t("rules.geo.focus"), picker(f.focusRegions, f.keepRegions, "danger", t("rules.geo.focus")), t("rules.geo.focus.help")),
+        sw("focusOfficialOnly", t("rules.geo.officialOnly"), t("rules.geo.officialOnly.help")),
         sw("focusOnly", t("rules.geo.focusOnly"), t("rules.geo.focusOnly.help"))
       );
     }
@@ -1587,6 +1589,7 @@
         keepRegions: [...f.keepRegions],
         focusRegions: [...f.focusRegions],
         focusOnly: f.focusOnly.checked,
+        focusOfficialOnly: f.focusOfficialOnly.checked,
         thresholdDays: f.thresholdDays.value,
         protectMutuals: f.protectMutuals.checked,
         protectMinFollowers: f.protectMinFollowers.value,
@@ -1679,7 +1682,9 @@
       return !a || !a.at || now - Date.parse(a.at) > GEO_RECHECK_MS;
     });
     // kandidat dari lokasi prioritas dan yang tebakannya lemah (bahasa) dicek duluan
-    pending.sort((a, b) => Number(b.focus) - Number(a.focus) || Number(!a.geo) - Number(!b.geo));
+    const focusSet = new Set(state.settings.focusRegions);
+    const likely = (r) => Number(Geo.geoMatches(r.geo, focusSet));
+    pending.sort((a, b) => likely(b) - likely(a) || Number(!a.geo) - Number(!b.geo));
     return { all, pending };
   }
 
@@ -1697,6 +1702,9 @@
       ui.geoOfficial,
       h("span", { class: "lbl" }, t("rules.geo.official")),
       h("span", { class: "help" }, t("rules.geo.official.help")),
+      state.settings.focusOfficialOnly && state.settings.focusRegions.length && pending.length && !busy
+        ? h("span", { class: "geo-note warn" }, t("rules.geo.officialFirst"))
+        : null,
       all.length ? h("span", { class: "geo-note" }, pending.length ? t("rules.geo.checked", { n: n(checked), total: n(all.length) }) + (est ? " " + est : "") : t("rules.geo.allChecked", { total: n(all.length) })) : null,
       state.scan ? h("div", { class: "backup" }, button) : null
     );

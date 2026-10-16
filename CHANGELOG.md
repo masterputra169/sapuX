@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.6.0
+
+- New Location option, on by default: "Only use X's official data for unfollow first". Guesses from bio or post language still protect accounts but never move them to the front of the queue.
+- The X check now looks at accounts that probably match your priority places first.
+
 ## 2.5.0
 
 - Official location from X: Rules → Location → "Check N with X" reads "Account based in" from each candidate's About page.
