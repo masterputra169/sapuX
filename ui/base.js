@@ -69,6 +69,21 @@ function fmtDate(iso) {
 function fmtDateTime(iso) {
   return new Date(iso).toLocaleString(I18n.locale(), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 }
+/** Pemakaian jatah 24 jam bergulir: { count, left, nextFreeAt, refillAt }. */
+function capUsage(s = state.settings) {
+  return C.dailyUsage(state.daily.stamps, s.dailyCap);
+}
+/** Jam slot berikutnya: "21:04" atau "tomorrow 06:15" (versi singkat untuk bar bawah). */
+function fmtSlotTime(ms) {
+  const d = new Date(ms);
+  const time = d.toLocaleTimeString(I18n.locale(), { hour: "2-digit", minute: "2-digit" });
+  return C.localDateKey(d) === C.localDateKey() ? time : t("time.tomorrow", { time });
+}
+/** Kapan slot berikutnya terbuka: "21:04 (in 3 h 12 min)" atau "tomorrow 06:15 (in 9 h)". */
+function fmtSlot(ms) {
+  const wait = I18n.duration(Math.max(60, Math.ceil((ms - Date.now()) / 60000) * 60));
+  return t("time.slot", { time: fmtSlotTime(ms), in: wait });
+}
 /** Nama tempat untuk kode negara ("ID") atau wilayah ("sea"), sesuai bahasa antarmuka. */
 function placeName(code) {
   if (!code) return "";
@@ -111,7 +126,7 @@ const state = {
   owner: null,
   settings: C.sanitizeSettings({}),
   scan: null, // { scannedAt, users: [...] }
-  daily: { count: 0 },
+  daily: { count: 0, stamps: [] }, // unfollow asli dalam 24 jam terakhir
   log: [],
   queue: null, // { savedAt, ids: [...] } sisa antrean unfollow asli
   about: {}, // hasil cek "Account based in" ke X, per id akun

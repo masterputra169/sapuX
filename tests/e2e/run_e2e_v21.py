@@ -144,7 +144,7 @@ with sync_playwright() as pw:
     expect(page.locator(P + ".banner-title")).to_have_text("9 accounts left in your queue")
     print("5. Cap hit after 3, queue saved:", destroyed())
 
-    n = notifs(); assert len(n) == 1 and n[0]["title"] == "SapuX reached today's limit" and "queue" in n[0]["message"] and n[0]["icon"].endswith("icon128.png"), n
+    n = notifs(); assert len(n) == 1 and n[0]["title"] == "SapuX reached its 24-hour limit" and "queue" in n[0]["message"] and n[0]["icon"].endswith("icon128.png"), n
     print("6. Desktop notification:", n[0]["title"], "|", n[0]["message"])
 
     # queue survives a reload
@@ -164,7 +164,25 @@ with sync_playwright() as pw:
 
     # resume with no daily allowance left = blocked, queue untouched
     page.get_by_role("button", name="Resume").click()
-    expect(page.locator(P + ".status")).to_contain_text("limit")
+    expect(page.locator(P + ".status")).to_contain_text("per 24 hours is used up. Next slot opens")
+    expect(page.locator(P + ".mode.live")).to_contain_text("Limit full until")
+    expect(page.locator(P + ".banner-body")).to_contain_text("You can resume once a slot opens")
+    print("8a. Limit full: next slot time shown in footer and queue card")
+
+    # rolling 24 h window: the counter is per timestamp, not per calendar day
+    sw = ctx.service_workers[0]
+    key = sw.evaluate("chrome.storage.local.get(null).then(r => Object.keys(r).find(k => k.startsWith('daily:')))")
+    stamps = sw.evaluate(f"chrome.storage.local.get('{key}').then(r => r['{key}'])")
+    assert stamps["v"] == 2 and len(stamps["stamps"]) == 5, stamps
+    # an old per-date counter ({date, count}) is rebuilt from History: 5 real unfollows, not 99
+    sw.evaluate(f"chrome.storage.local.set({{ '{key}': {{ date: '2026-01-01', count: 99 }} }})")
+    expect(page.locator(P + ".mode.live")).to_contain_text("Limit full until")
+    # the two oldest unfollows are about to leave the 24 h window; the panel picks that up by itself
+    sw.evaluate(f"""(() => {{ const now = Date.now(), day = 864e5;
+      return chrome.storage.local.set({{ '{key}': {{ v: 2, stamps: [now - day + 5000, now - day + 6000, now - 3e5, now - 2e5, now - 1e5] }} }}); }})()""")
+    expect(page.locator(P + ".mode.live")).to_have_text("Live mode, 2/5 left (24 h)", timeout=45000)
+    expect(page.locator(P + ".banner-body")).to_contain_text("Resume to continue")
+    print("8b. Old counter migrated from history; slots reopen 24 h after each unfollow")
     page.get_by_role("button", name="Discard").click()
     expect(page.locator(P + ".status")).to_have_text("Queue discarded.")
     expect(page.locator(P + ".banner")).to_have_count(0)

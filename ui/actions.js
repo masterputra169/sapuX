@@ -61,8 +61,9 @@ async function startUnfollow(explicitQueue) {
   const s = { ...state.settings };
   const owner = state.owner;
   state.daily = await Store.getDaily(owner.key);
-  const remaining = s.dryRun ? queue.length : Math.max(0, s.dailyCap - state.daily.count);
-  if (remaining === 0) return setStatus(t("status.capReached", { cap: s.dailyCap }), "error");
+  const use = capUsage(s);
+  const remaining = s.dryRun ? queue.length : use.left;
+  if (remaining === 0) return setStatus(t("status.capReached", { cap: s.dailyCap, when: fmtSlot(use.nextFreeAt || Date.now()) }), "error");
   const count = Math.min(queue.length, remaining);
   const resuming = Array.isArray(explicitQueue);
   const live = !s.dryRun;
@@ -127,7 +128,11 @@ async function startUnfollow(explicitQueue) {
     // Selesai tapi sebagian antrean tidak dijalankan karena jatah harian = sama dengan "jatah habis".
     const reason = res.reason === "finished" && count < queue.length ? "cap" : res.reason;
     if (reason === "finished") outcome = { kind: "done", text: t("done.finished", { n: res.done, verb, skipped }) + saved, status: "ok", progress: { index: count, total: count } };
-    else if (reason === "cap") outcome = { kind: "cap", text: t("done.cap", { cap: s.dailyCap, n: res.done, verb, skipped }) + saved, status: "ok" };
+    else if (reason === "cap") {
+      const next = capUsage(s).nextFreeAt;
+      const when = next ? t("done.capNext", { when: fmtSlot(next) }) : "";
+      outcome = { kind: "cap", text: t("done.cap", { cap: s.dailyCap, n: res.done, verb, skipped }) + when + saved, status: "ok" };
+    }
     else outcome = { kind: "error", text: t("done.error", { n: res.done, verb, e: Api.describeError(res.error) }) + saved, status: "error" };
     setStatus(outcome.text, outcome.status, outcome.progress);
   } catch (e) {

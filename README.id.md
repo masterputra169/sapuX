@@ -4,7 +4,7 @@
 
 **Unfollow akun X (Twitter) yang sudah tidak aktif dengan aman, langsung dari browser kamu.**
 
-SapuX adalah ekstensi Chrome kecil yang men-scan akun yang kamu follow, mengelompokkannya berdasarkan kapan terakhir posting, lalu meng-unfollow akun yang kamu pilih secara pelan dan dengan batas harian. Semua berjalan lokal: tanpa server, tanpa daftar akun, tanpa API key, tanpa dependency.
+SapuX adalah ekstensi Chrome kecil yang men-scan akun yang kamu follow, mengelompokkannya berdasarkan kapan terakhir posting, lalu meng-unfollow akun yang kamu pilih secara pelan dan dengan batas per 24 jam. Semua berjalan lokal: tanpa server, tanpa daftar akun, tanpa API key, tanpa dependency.
 
 [English](README.md)
 
@@ -23,7 +23,8 @@ SapuX adalah ekstensi Chrome kecil yang men-scan akun yang kamu follow, mengelom
 - **Filter follow balik.** Chip di bawah kolom cari (Semua · Follow balik · Tidak follow balik) menyaring grup yang sedang dibuka, lengkap dengan jumlahnya.
 - **Aturan lokasi.** SapuX menebak asal akun dari bendera, nama tempat, dan kata sehari-hari di nama, bio, dan kolom lokasi, ditambah bahasa posting terakhir, lalu memberi tingkat keyakinan tinggi, sedang, atau rendah. Setelah sebagian akun dicek ke X, SapuX menampilkan seberapa sering tebakannya cocok. Lindungi negara atau wilayah tertentu (misalnya Indonesia atau Asia Tenggara), dan dahulukan yang lain di antrean (misalnya India). Kandidat juga bisa dicek ke data resmi X "Account based in" (satu request per akun, pelan, dan mengikuti batas dari X); data ini menggantikan tebakan, dan akun yang ditandai X mungkin memakai VPN tidak pernah diprioritaskan. Secara default hanya data X yang bisa mendahulukan akun di antrean; tebakan dipakai untuk perlindungan. Lokasi saja tidak pernah membuat akun jadi kandidat unfollow.
 - **Perlindungan.** Whitelist, mutual, dan akun dengan followers di atas N tidak pernah disentuh. Tambah atau lepas akun dari whitelist dengan satu klik.
-- **Antrean yang bisa dilanjutkan.** Kalau jatah harian habis, kamu klik Hentikan, atau tab tertutup, sisa akun disimpan. Besok tinggal klik Lanjutkan.
+- **Jatah 24 jam bergulir.** Yang dihitung hanya unfollow dalam 24 jam terakhir, bukan "hari ini", jadi jatah tidak bisa dobel di sekitar tengah malam. Kalau jatah penuh, SapuX menampilkan kapan slot berikutnya terbuka.
+- **Antrean yang bisa dilanjutkan.** Kalau jatah habis, kamu klik Hentikan, atau tab tertutup, sisa akun disimpan. Tinggal klik Lanjutkan begitu slot terbuka.
 - **Notifikasi desktop** saat proses unfollow asli selesai atau berhenti.
 - **Backup dan restore** aturan + whitelist sebagai file JSON.
 - **Riwayat dengan undo.** Setiap unfollow tercatat; follow lagi dengan satu klik. Export CSV untuk hasil scan dan riwayat.
@@ -72,7 +73,7 @@ Scan ulang tiap beberapa minggu. Deteksi aktivitas diam-diam butuh dua scan untu
 
 | Risiko | Penanganan |
 |---|---|
-| Kena limit / suspend | Jeda acak 20-45 detik, istirahat 3-6 menit tiap 10 unfollow, batas 80/hari secara default (maksimal 500). Jeda minimum dikunci 10 detik. Naikkan batas harian bertahap. |
+| Kena limit / suspend | Jeda acak 20-45 detik, istirahat 3-6 menit tiap 10 unfollow, batas 80 per 24 jam bergulir secara default (maksimal 500). Jeda minimum dikunci 10 detik. Naikkan batas harian bertahap. |
 | X membalas rate limit, 403, akun dikunci, atau error tak dikenal | Berhenti total, tidak mencoba ulang. |
 | Salah unfollow | Simulasi default, konfirmasi, export CSV, whitelist, Follow lagi. |
 | Akun tanpa data ikut ter-unfollow | Dipisah di kategori sendiri dan tidak terpilih otomatis. |
@@ -93,7 +94,7 @@ Permission: `storage`, `webRequest` (membaca header `Authorization` dari request
 ## Tes
 
 ```bash
-node --test                 # 49 unit test, tanpa dependency
+node --test                 # 55 unit test, tanpa dependency
 bash tests/e2e/run_all.sh   # end-to-end, butuh Python + Playwright + Chromium
 ```
 

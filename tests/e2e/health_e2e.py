@@ -26,7 +26,7 @@ with sync_playwright() as pw:
     # folds: only "who" open by default; summaries visible on closed ones
     opened = page.evaluate("[...document.querySelector('#sapux-host').shadowRoot.querySelectorAll('details.fold')].map(d => d.dataset.fold + ':' + d.open)")
     assert opened == ["who:true", "geo:false", "speed:false", "health:false", "backup:false"], opened
-    expect(page.locator(P + 'details[data-fold="speed"] .fold-sum')).to_have_text("80/day · 20-45 s · break every 10")
+    expect(page.locator(P + 'details[data-fold="speed"] .fold-sum')).to_have_text("80/24 h · 20-45 s · break every 10")
     expect(page.locator(P + 'details[data-fold="geo"] .fold-sum')).to_have_text("Off")
     print("1. Rules folds closed except 'Who gets swept'; summaries shown")
 

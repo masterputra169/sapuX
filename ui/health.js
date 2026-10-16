@@ -72,7 +72,9 @@ async function runHealthCheck(list, button) {
       /* pakai nilai di memori */
     }
     const s = state.settings;
-    add(state.daily.count >= s.dailyCap ? "warn" : "info", t("health.daily", { n: state.daily.count, cap: s.dailyCap }));
+    const use = capUsage(s);
+    if (use.left === 0 && use.nextFreeAt) add("warn", t("health.dailyFull", { n: use.count, cap: s.dailyCap, when: fmtSlot(use.nextFreeAt) }));
+    else add("info", t("health.daily", { n: use.count, cap: s.dailyCap }));
     if (!state.scan) add("warn", t("health.scan.none"));
     else {
       const days = C.daysSince(Date.parse(state.scan.scannedAt));

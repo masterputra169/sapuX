@@ -28,6 +28,7 @@ Everything stays in your Chrome profile on your computer:
 |---|---|---|
 | Session token | `chrome.storage.session` (memory only) | Until the browser closes |
 | Rules, keep list, scan results, history, queue, location results | `chrome.storage.local` | Until you delete it |
+| Times of your live unfollows from the last 24 hours (for the limit) | `chrome.storage.local` | Older than 24 hours are dropped |
 | CSV exports and backups | Your Downloads folder, only when you click export | Until you delete them |
 
 This data is not encrypted by SapuX; it is protected the same way as the rest of your Chrome profile. Anyone who can use your computer and Chrome profile can see it.

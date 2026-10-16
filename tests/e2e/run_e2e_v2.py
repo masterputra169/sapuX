@@ -102,7 +102,7 @@ with sync_playwright() as pw:
     expect(page.locator(P + ".hint")).to_contain_text("Fewer than 50 followers")
     shot("4-small")
     page.locator(P + '.seg[data-group="inactive"]').click()
-    expect(page.locator(P + ".mode.live")).to_have_text("Live mode, 80/80 left today")
+    expect(page.locator(P + ".mode.live")).to_have_text("Live mode, 80/80 left (24 h)")
     page.get_by_role("button", name="Unfollow 4").click()
     accept_run("Live run")
     page.wait_for_timeout(1200); shot("5-running")

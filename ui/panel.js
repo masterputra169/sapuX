@@ -92,6 +92,14 @@ function mountSapuX() {
     }, 150);
   });
 
+  // Jatah 24 jam bergulir: slot terbuka sendiri seiring waktu. Tiap 30 detik perbarui sisa jatah
+  // dan teks "slot berikutnya" di bar bawah dan kartu antrean (tanpa request ke X, tanpa membangun ulang daftar).
+  setInterval(() => {
+    if (state.stale || ui.panel.hidden || !state.owner || state.settings.dryRun || !state.daily.stamps.length) return;
+    renderActions();
+    if (state.queue && ui.queueBody?.isConnected) ui.queueBody.textContent = queueBody();
+  }, 30000);
+
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible" && !ui.panel.hidden && !state.busy && !state.stale) refreshView({ quiet: true }).catch(() => {});
   });

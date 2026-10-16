@@ -168,7 +168,7 @@ function queueBanner(groups) {
     { class: "banner", role: "region", "aria-label": t("queue.title", { n: pending.length }) },
     icon("clock-counter-clockwise", 18),
     h("div", { class: "banner-title" }, t("queue.title", { n: pending.length })),
-    h("div", { class: "banner-body" }, t("queue.body", { when: fmtDateTime(state.queue.savedAt) })),
+    (ui.queueBody = h("div", { class: "banner-body" }, queueBody())),
     h(
       "div",
       { class: "banner-actions" },
@@ -290,6 +290,14 @@ async function setWhitelisted(r, protect) {
   refreshList();
 }
 
+/** Teks kartu antrean; kalau jatah 24 jam sedang penuh, sebut kapan bisa dilanjutkan. */
+function queueBody() {
+  const when = fmtDateTime(state.queue.savedAt);
+  const use = capUsage();
+  if (!state.settings.dryRun && use.left === 0 && use.nextFreeAt) return t("queue.bodyWait", { when, slot: fmtSlot(use.nextFreeAt) });
+  return t("queue.body", { when });
+}
+
 // ---------- bar aksi (footer) ----------
 function renderActions() {
   const groups = state.tab === "clean" ? computeRows() : null;
@@ -302,13 +310,15 @@ function renderActions() {
   ui.actionbar.hidden = false;
   const s = state.settings;
   const count = queueFrom(groups).length;
-  const capLeft = Math.max(0, s.dailyCap - state.daily.count);
+  const use = capUsage(s);
+  const capLeft = use.left;
   const runnable = s.dryRun ? count : Math.min(count, capLeft);
+  const liveText = capLeft === 0 && use.nextFreeAt ? t("mode.liveFull", { time: fmtSlotTime(use.nextFreeAt) }) : t("mode.live", { left: capLeft, cap: s.dailyCap });
 
   const info = h(
     "div",
     { class: "info" },
-    s.dryRun ? h("span", { class: "mode sim" }, t("mode.sim")) : h("span", { class: "mode live num" }, t("mode.live", { left: capLeft, cap: s.dailyCap })),
+    s.dryRun ? h("span", { class: "mode sim" }, t("mode.sim")) : h("span", { class: "mode live num" }, liveText),
     !s.dryRun && runnable > 1 ? h("span", { class: "eta" }, t("actions.eta", { t: I18n.duration(C.estimateSeconds(runnable, s)) })) : null
   );
   const main =

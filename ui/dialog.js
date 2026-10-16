@@ -78,7 +78,7 @@ function runDialogBody({ batch, rest, s, live }) {
   const body = [];
 
   if (live) {
-    const left = Math.max(0, s.dailyCap - state.daily.count);
+    const left = capUsage(s).left;
     const tiles = [statTile(t("dlg.stat.now"), batch.length.toLocaleString(loc), t("dlg.stat.nowNote", { left, cap: s.dailyCap }), "danger")];
     if (rest > 0) tiles.push(statTile(t("dlg.stat.queue"), rest.toLocaleString(loc), t("dlg.stat.queueNote")));
     // Perkiraan dibulatkan ke menit supaya muat di kartu ("≈ 1 h 38 min", bukan "1 h 37 min 52 s").

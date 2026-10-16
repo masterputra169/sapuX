@@ -4,7 +4,7 @@
 
 **Unfollow inactive X (Twitter) accounts safely, from your own browser.**
 
-SapuX is a small Chrome extension that scans the accounts you follow, sorts them by when they last posted, and unfollows the ones you pick, slowly and with a daily limit. Everything runs locally. There is no server, no account to create, no API key and no dependencies.
+SapuX is a small Chrome extension that scans the accounts you follow, sorts them by when they last posted, and unfollows the ones you pick, slowly and with a limit per 24 hours. Everything runs locally. There is no server, no account to create, no API key and no dependencies.
 
 [Bahasa Indonesia](README.id.md)
 
@@ -22,7 +22,8 @@ SapuX is a small Chrome extension that scans the accounts you follow, sorts them
 - **Follow-back filter.** Chips under the search box (All · Follows you · Doesn't follow) narrow whichever group you're viewing, with live counts.
 - **Location rules.** SapuX guesses where an account is based from flags, places and everyday words in its name, bio and location, plus the language of its last post, and rates each guess high, medium or low. Once some accounts are checked with X, it shows how often the guesses matched. Keep whole countries or regions (say Indonesia or Southeast Asia), and send others to the front of the queue (say India). You can also check candidates against X's official "Account based in" (one request per account, slow and rate-aware); that data replaces the guess, and accounts X flags as possibly on a VPN are never prioritized. By default only X's data can put an account at the front of the queue; guesses are used for protection. Location alone never makes an account a candidate.
 - **Protection.** Your keep list, mutuals, places you keep and accounts above N followers are never touched. Add or remove anyone from the list with one click.
-- **Queue that resumes.** When the daily limit is hit, you press Stop, or the tab closes, the remaining accounts are saved. Resume tomorrow from where you stopped.
+- **Rolling 24-hour limit.** Only unfollows from the last 24 hours count, not "today", so the limit can't double around midnight. When it is full, SapuX shows when the next slot opens.
+- **Queue that resumes.** When the limit is hit, you press Stop, or the tab closes, the remaining accounts are saved. Resume from where you stopped once slots open.
 - **Desktop notifications** when a live run finishes or stops.
 - **Backup and restore** your rules and keep list as a JSON file.
 - **History with undo.** Every unfollow is logged; follow anyone again with one click. CSV export for scans and history.
@@ -75,7 +76,7 @@ Rescan every few weeks. Quiet activity detection needs two scans to compare. If 
 
 | Risk | What SapuX does |
 |---|---|
-| Rate limits or suspension | Random 20 to 45 s pause between unfollows, a 3 to 6 min break every 10, and a daily limit of 80 by default (max 500). The pause can't go below 10 s. If you raise the limit, do it gradually. |
+| Rate limits or suspension | Random 20 to 45 s pause between unfollows, a 3 to 6 min break every 10, and a limit of 80 per rolling 24 hours by default (max 500). The pause can't go below 10 s. If you raise the limit, do it gradually. |
 | X answers with a rate limit, 403, locked account or unknown error | Stops completely. No retries. |
 | Unfollowing the wrong people | Simulation on by default, confirmation dialog, CSV export, keep list, Follow again. |
 | Accounts with no data swept by accident | They sit in their own group and are not pre-selected. |
@@ -87,7 +88,7 @@ Rescan every few weeks. Quiet activity detection needs two scans to compare. If 
 
 ### Permissions
 
-- `storage`: rules, scan results, history, queue and the daily counter, on your computer.
+- `storage`: rules, scan results, history, queue and the times of your last 24 hours of unfollows (for the limit), on your computer.
 - `webRequest`: read the `Authorization` header of X's own web requests.
 - `notifications`: the desktop notification at the end of a live run (can be turned off in Rules).
 - Host access: `x.com` and `api.x.com` only.
@@ -109,7 +110,7 @@ lib/geo.js           location guess from bio text, flags and post language
 lib/core.js          pure logic: classification, quiet activity, whitelist, CSV, settings
 lib/i18n.js          every UI string (English default + Bahasa Indonesia)
 lib/api.js           calls to X endpoints
-lib/store.js         chrome.storage.local (settings, scan, history, queue, daily count)
+lib/store.js         chrome.storage.local (settings, scan, history, queue, 24 h limit)
 lib/engine.js        scan + unfollow loop with pauses, daily limit and auto-stop
 ui/icons.js          Phosphor icons (MIT)
 ui/styles.js         panel styles and logo
@@ -135,13 +136,13 @@ No build step and no `npm install`: the code you read is the code Chrome runs.
 ## Tests
 
 ```bash
-node --test                 # 49 unit tests, no dependencies
+node --test                 # 55 unit tests, no dependencies
 bash tests/e2e/run_all.sh   # end-to-end, needs Python + Playwright + Chromium
 ```
 
-The unit tests cover classification (inactive, small, one-way, quiet activity, protection, location), location guessing and its accuracy measure, the "Account based in" checker (rate-limit waits, stale request IDs), scan merging, settings limits, CSV escaping, the unfollow engine (daily limit, stop on 429/403, skipping deleted accounts, Stop button, simulation sends nothing) and translation completeness.
+The unit tests cover classification (inactive, small, one-way, quiet activity, protection, location), location guessing and its accuracy measure, the "Account based in" checker (rate-limit waits, stale request IDs), scan merging, the rolling 24-hour limit (midnight, migration from the old counter), settings limits, CSV escaping, the unfollow engine (daily limit, stop on 429/403, skipping deleted accounts, Stop button, simulation sends nothing) and translation completeness.
 
-The end-to-end tests load SapuX into a real Chromium against a fake x.com served over HTTPS and click through everything a user does: scan, search, keep, simulate, live unfollow with the daily limit, the resumable queue, notifications, backup/restore, both languages and themes, location rules, the X location check, the health check, and the "extension was updated" screen. Both suites run on every push through GitHub Actions.
+The end-to-end tests load SapuX into a real Chromium against a fake x.com served over HTTPS and click through everything a user does: scan, search, keep, simulate, live unfollow with the 24-hour limit and slots reopening, the resumable queue, notifications, backup/restore, both languages and themes, location rules, the X location check, the health check, and the "extension was updated" screen. Both suites run on every push through GitHub Actions.
 
 ## License
 

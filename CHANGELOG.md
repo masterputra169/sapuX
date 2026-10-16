@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.2.0
+
+- The unfollow limit is now a rolling 24-hour window instead of a calendar day. SapuX keeps the time of each live unfollow and counts only the last 24 hours, so the limit can no longer double around midnight (for example 300 before 00:00 and 300 more right after). Slots open again one by one, 24 hours after each unfollow.
+- When the limit is full, the footer, the queue card, the status line, the notification and the health check say when the next slot opens ("tomorrow 01:25 (in 4 h)"). The panel updates by itself as slots open, without any request to X.
+- Changing the time zone or passing midnight no longer resets the count.
+- Your current count carries over on update: the old per-day counter is rebuilt from the real unfollow times in History. If the counter is ever lost, it is rebuilt the same way.
+- Durations with whole hours read "4 h" instead of "4 h 0 min".
+
 ## 3.1.0
 
 Ready for public use.
