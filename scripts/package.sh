@@ -12,7 +12,7 @@ cd "$ROOT"
 cp -r manifest.json background.js _locales lib ui icons fonts LICENSE "$OUT/$NAME/"
 cp README.md PRIVACY.md "$OUT/$NAME/"
 cd "$OUT"
-# Fixed timestamps + sorted entries so the same source always gives the same ZIP.
+# Fixed timestamps + sorted entries keep the ZIP stable between builds.
 find "$NAME" -exec touch -h -d "2026-01-01T00:00:00Z" {} +
 find "$NAME" -type f | LC_ALL=C sort | zip -q -X -D "$NAME.zip" -@
 sha256sum "$NAME.zip" > "$NAME.zip.sha256"
