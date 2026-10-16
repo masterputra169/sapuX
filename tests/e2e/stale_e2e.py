@@ -11,7 +11,7 @@ with sync_playwright() as pw:
     ctx = pw.chromium.launch_persistent_context(str(HERE / "profile-stale"), executable_path=os.environ.get("CHROMIUM") or None,
         headless=False, viewport={"width": 1280, "height": 900},
         args=["--headless=new", f"--disable-extensions-except={EXT}", f"--load-extension={EXT}",
-              "--host-resolver-rules=MAP x.com:443 127.0.0.1:8443", "--ignore-certificate-errors", "--no-sandbox", "--no-proxy-server"])
+              "--host-resolver-rules=MAP x.com:443 127.0.0.1:8443, MAP api.x.com:443 127.0.0.1:8443, MAP pbs.twimg.com:443 127.0.0.1:8443, MAP * ~NOTFOUND", "--ignore-certificate-errors", "--no-sandbox", "--no-proxy-server"])
     page = ctx.new_page()
     page.on("pageerror", lambda e: errors.append(str(e)))
     page.on("console", lambda m: errors.append(m.text) if m.type == "error" and "ERR_NAME" not in m.text and "404" not in m.text else None)

@@ -13,7 +13,7 @@ with sync_playwright() as pw:
     ctx = pw.chromium.launch_persistent_context(str(HERE / "profilehealth"), executable_path=os.environ.get("CHROMIUM") or None,
         headless=False, viewport={"width": 1280, "height": 900},
         args=["--headless=new", f"--disable-extensions-except={EXT}", f"--load-extension={EXT}",
-              "--host-resolver-rules=MAP x.com:443 127.0.0.1:8446", "--ignore-certificate-errors", "--no-sandbox", "--no-proxy-server"])
+              "--host-resolver-rules=MAP x.com:443 127.0.0.1:8446, MAP api.x.com:443 127.0.0.1:8446, MAP pbs.twimg.com:443 127.0.0.1:8446, MAP * ~NOTFOUND", "--ignore-certificate-errors", "--no-sandbox", "--no-proxy-server"])
     page = ctx.new_page(); page.on("pageerror", lambda e: errors.append(str(e)))
     P = "#sapux-host >> "
     def items(): return page.locator(P + ".health-item").all_inner_texts()
