@@ -191,6 +191,7 @@
     .tag.keep { background: color-mix(in srgb, var(--c-protected) 16%, transparent); color: var(--ok); }
     .tag.geo { display: inline-flex; align-items: center; gap: 4px; }
     .tag.geo.official .ico { opacity: .8; }
+    .tag.geo.low { opacity: .62; }
     .tag.geo.focus { background: color-mix(in srgb, var(--danger) 14%, transparent); color: var(--text); }
     .tag.quiet { background: color-mix(in srgb, var(--c-active) 18%, transparent); color: var(--text); }
     .side { display: flex; align-items: center; gap: 4px; }
@@ -288,6 +289,7 @@
     .geo-note { margin: -8px 0 0; font-size: 12.5px; color: var(--faint); }
     .geo-note.warn { color: var(--accent-text); }
     .field .geo-note { margin: 0; }
+    .geo-note.accuracy { margin-top: -10px; color: var(--muted); }
     .danger-zone { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-top: 18px; border-top: 1px solid var(--line); }
 
     /* ---------- dialog konfirmasi (pengganti window.confirm) ---------- */
@@ -380,16 +382,16 @@
   function geoSourceText(geo) {
     if (!geo) return "";
     if (geo.source === "x") return t(geo.accurate === false ? "geo.fromXVpn" : "geo.fromX", { text: geo.hint });
-    if (geo.source === "lang") {
-      let lang = geo.hint === "in" ? "id" : geo.hint;
-      try {
-        lang = new Intl.DisplayNames([I18n.locale()], { type: "language" }).of(lang) || lang;
-      } catch {
-        /* biarkan kode bahasa */
-      }
-      return t("geo.fromLang", { lang });
+    const list = (geo.signals || []).map((sig) => t("geo.sig." + sig.kind, { text: sig.kind === "lang" ? langName(sig.text) : sig.text })).join(" · ");
+    return t("geo.guess", { conf: t("geo.conf." + (geo.confidence || "low")), list });
+  }
+  function langName(code) {
+    const c = code === "in" ? "id" : code;
+    try {
+      return new Intl.DisplayNames([I18n.locale()], { type: "language" }).of(c) || c;
+    } catch {
+      return c;
     }
-    return t(geo.source === "flag" ? "geo.fromFlag" : "geo.fromBio", { text: geo.hint });
   }
 
   function handleLink(handle) {
@@ -987,7 +989,7 @@
     if (r.shield === "followers") tags.push(h("span", { class: "tag keep" }, t("tag.bigFollowers")));
     if (r.followedBy) tags.push(h("span", { class: r.shield === "mutual" ? "tag keep" : "tag" }, t("tag.mutual")));
     if (r.geo) {
-      const cls = "tag geo" + (r.shield === "region" ? " keep" : r.focus && !r.shield ? " focus" : "");
+      const cls = "tag geo" + (r.shield === "region" ? " keep" : r.focus && !r.shield ? " focus" : "") + (r.geo.confidence === "low" ? " low" : "");
       const mark = r.geo.source === "x" ? icon(r.geo.accurate === false ? "warning" : "check-circle", 11) : null;
       tags.push(h("span", { class: cls + (r.geo.source === "x" ? " official" : ""), title: geoSourceText(r.geo) }, mark, geoLabel(r.geo)));
     }
@@ -1379,6 +1381,7 @@
       { label: "guessed_country", get: (r) => r.geo?.country || "" },
       { label: "guessed_region", get: (r) => r.geo?.region || "" },
       { label: "location_source", get: (r) => r.geo?.source || "" },
+      { label: "location_confidence", get: (r) => r.geo?.confidence || "" },
       { label: "x_account_based_in", get: (r) => r.basedIn || "" },
       { label: "x_location_accurate", get: (r) => (r.basedIn ? (r.basedAccurate === false ? "no" : "yes") : "") },
       { label: "priority_place", get: (r) => (r.focus ? "yes" : "no") },
@@ -1562,7 +1565,7 @@
         );
       };
       const users = state.scan?.users || [];
-      const hasData = users.some((u) => "location" in u);
+      const hasData = users.some((u) => "bio" in u);
       const found = hasData
         ? users.filter((u) => {
             const ab = state.about[u.id];
@@ -1577,12 +1580,29 @@
         users.length
           ? h("p", { class: "geo-note" + (hasData ? "" : " warn") }, hasData ? t("rules.geo.coverage", { n: n(found), total: n(users.length) }) : t("rules.geo.rescan"))
           : null,
+        accuracyNote(),
         (ui.geoOfficial = h("div", { class: "field" })) && renderGeoOfficial() && ui.geoOfficial,
         field(t("rules.geo.keep"), picker(f.keepRegions, f.focusRegions, "", t("rules.geo.keep")), t("rules.geo.keep.help")),
         field(t("rules.geo.focus"), picker(f.focusRegions, f.keepRegions, "danger", t("rules.geo.focus")), t("rules.geo.focus.help")),
         sw("focusOfficialOnly", t("rules.geo.officialOnly"), t("rules.geo.officialOnly.help")),
         sw("focusOnly", t("rules.geo.focusOnly"), t("rules.geo.focusOnly.help"))
       );
+    }
+
+    /** Seberapa sering tebakan profil cocok dengan data resmi X (hanya akun yang sudah dicek). */
+    function accuracyNote() {
+      const merged = (state.scan?.users || []).map((u) => {
+        const ab = state.about[u.id];
+        return ab && ab.based ? { ...u, basedIn: ab.based, basedAccurate: ab.accurate } : null;
+      }).filter(Boolean);
+      const m = Geo.measureAccuracy(merged);
+      if (m.n < 5) return null;
+      const pct = (a, b) => Math.round((a / b) * 100);
+      const by = ["high", "medium", "low"]
+        .filter((c) => m.byConfidence[c].n)
+        .map((c) => t("rules.geo.accuracyBy", { label: t("geo.conf." + c), pct: pct(m.byConfidence[c].match, m.byConfidence[c].n) }))
+        .join(" · ");
+      return h("p", { class: "geo-note accuracy" }, t("rules.geo.accuracy", { pct: pct(m.match, m.n), n: n(m.n), by }));
     }
 
     async function saveSettings(e) {

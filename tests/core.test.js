@@ -175,9 +175,11 @@ test("classify: lindungi lokasi tertentu, tandai lokasi prioritas", () => {
   assert.equal(id.shield, "region");
   assert.equal(C.classify({ handle: "a", location: "Manila", lastTweetAt: old }, opts, NOW).shield, "region"); // lewat wilayah "sea"
   assert.equal(C.classify({ handle: "a", lang: "in", lastTweetAt: old }, opts, NOW).shield, "region"); // lewat bahasa
-  const india = C.classify({ handle: "b", location: "Mumbai", lastTweetAt: old }, opts, NOW);
+  const india = C.classify({ handle: "b", location: "🇮🇳 Mumbai", lastTweetAt: old }, opts, NOW);
   assert.equal(india.shield, null);
   assert.equal(india.focus, true);
+  // tebakan berkeyakinan sedang (hanya nama kota) tetap melindungi, tapi tidak menentukan prioritas
+  assert.equal(C.classify({ handle: "b", location: "Mumbai", lastTweetAt: old }, opts, NOW).focus, false);
   // lokasi tidak pernah menjadikan akun aktif sebagai kandidat
   assert.equal(C.classify({ handle: "b", location: "Mumbai", lastTweetAt: daysAgo(2) }, opts, NOW).status, "active");
   // whitelist & mutual tetap jadi alasan utama; followers besar setelah lokasi
@@ -209,5 +211,5 @@ test("classify: prioritas hanya dari data resmi X (default)", () => {
   assert.equal(C.classify({ handle: "a", location: "Mumbai", lastTweetAt: old }, opts, NOW).focus, false); // tebakan bio
   assert.equal(C.classify({ handle: "a", basedIn: "India", lastTweetAt: old }, opts, NOW).focus, true); // data X
   assert.equal(C.classify({ handle: "a", location: "Jakarta", lastTweetAt: old }, opts, NOW).shield, "region"); // tebakan tetap melindungi
-  assert.equal(C.classify({ handle: "a", location: "Mumbai", lastTweetAt: old }, { ...opts, focusOfficialOnly: false }, NOW).focus, true);
+  assert.equal(C.classify({ handle: "a", location: "🇮🇳 Mumbai", lastTweetAt: old }, { ...opts, focusOfficialOnly: false }, NOW).focus, true);
 });

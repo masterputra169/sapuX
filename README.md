@@ -20,7 +20,7 @@ SapuX is a small Chrome extension that scans the accounts you follow, sorts them
 - **One-way.** Optionally sweep accounts that don't follow you back.
 - **Quiet activity detection.** If an account's following count changed between two scans, it is still opening X even without posting, so it counts as active.
 - **Follow-back filter.** Chips under the search box (All · Follows you · Doesn't follow) narrow whichever group you're viewing, with live counts.
-- **Location rules.** SapuX guesses where an account is based from the location in its bio (city, country or flag) and the language of its last post. Keep whole countries or regions (say Indonesia or Southeast Asia), and send others to the front of the queue (say India). You can also check candidates against X's official "Account based in" (one request per account, slow and rate-aware); that data replaces the guess, and accounts X flags as possibly on a VPN are never prioritized. By default only X's data can put an account at the front of the queue; guesses are used for protection. Location alone never makes an account a candidate.
+- **Location rules.** SapuX guesses where an account is based from flags, places and everyday words in its name, bio and location, plus the language of its last post, and rates each guess high, medium or low. Once some accounts are checked with X, it shows how often the guesses matched. Keep whole countries or regions (say Indonesia or Southeast Asia), and send others to the front of the queue (say India). You can also check candidates against X's official "Account based in" (one request per account, slow and rate-aware); that data replaces the guess, and accounts X flags as possibly on a VPN are never prioritized. By default only X's data can put an account at the front of the queue; guesses are used for protection. Location alone never makes an account a candidate.
 - **Protection.** Your keep list, mutuals, places you keep and accounts above N followers are never touched. Add or remove anyone from the list with one click.
 - **Queue that resumes.** When the daily limit is hit, you press Stop, or the tab closes, the remaining accounts are saved. Resume tomorrow from where you stopped.
 - **Desktop notifications** when a live run finishes or stops.
@@ -125,7 +125,7 @@ No build step and no `npm install`: the code you read is the code Chrome runs.
 node --test
 ```
 
-46 tests cover classification (inactive, small, one-way, quiet activity, protection, location), location guessing, the "Account based in" checker (rate-limit waits, stale request IDs), scan merging, settings limits, CSV escaping, the unfollow engine (daily limit, stop on 429/403, skipping deleted accounts, Stop button, simulation sends nothing) and translation completeness. They run on every push through GitHub Actions.
+49 tests cover classification (inactive, small, one-way, quiet activity, protection, location), location guessing, the "Account based in" checker (rate-limit waits, stale request IDs), scan merging, settings limits, CSV escaping, the unfollow engine (daily limit, stop on 429/403, skipping deleted accounts, Stop button, simulation sends nothing) and translation completeness. They run on every push through GitHub Actions.
 
 ## License
 

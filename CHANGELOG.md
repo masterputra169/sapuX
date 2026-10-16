@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.7.0
+
+- Smarter location guesses (no extra requests): flags and country words in the display name, demonyms and places in the bio ("Indonesian", "Proud Indian"), scripts (Devanagari, Thai, Hangul, Kana, Vietnamese…), everyday words in the bio and last post (Indonesian, Hindi/Urdu in Latin letters, Filipino, Nigerian Pidgin), plus the post language.
+- Every guess has a confidence level (high, medium, low). Signals that agree raise it; signals that point elsewhere lower it. The tooltip lists the signals used.
+- Low-confidence tags are shown faded. Guesses still protect accounts at any confidence; only high-confidence guesses can set priority (and only when "Only use X's official data" is off).
+- Accuracy check: once some accounts are checked with X, Rules shows how often the guesses matched X's data, overall and per confidence level.
+- Rescan once to load names' and bios' new signals.
+
 ## 2.6.1
 
 - Fix: no "Cannot read properties of undefined (reading 'onChanged')" error when an X tab loads while the extension is being reloaded or updated. The panel now stays out of the way until the page is refreshed.
