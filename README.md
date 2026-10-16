@@ -27,6 +27,8 @@ SapuX is a small Chrome extension that scans the accounts you follow, sorts them
 - **Backup and restore** your rules and keep list as a JSON file.
 - **History with undo.** Every unfollow is logged; follow anyone again with one click. CSV export for scans and history.
 - **Simulation mode on by default**, plus a clear confirmation before every run: how many now, how many go to the queue, estimated time and warnings.
+- **Pace presets.** Safe, Balanced or Fast fill in all pauses at once, with the time per 100 accounts shown on each.
+- **Health check.** One click tests SapuX against X right now, read-only: login, session, following list, location check, daily limit and scan age, each with a fix when something is off.
 - English and Bahasa Indonesia, light and dark theme (follows X).
 
 ## Install
@@ -61,7 +63,7 @@ Works in Chrome, Brave, Edge and other Chromium browsers.
 6. Anything left over (daily limit, Stop, closed tab) shows up as a queue card with **Resume** and **Discard**.
 7. Unfollowed someone by mistake? **History → Follow again**.
 
-Rescan every few weeks. Quiet activity detection needs two scans to compare.
+Rescan every few weeks. Quiet activity detection needs two scans to compare. If something stops working after X updates, open **Rules → Health check** and run it: it tells you which part broke and what to do.
 
 <p>
   <img src="docs/screenshots/queue.png" width="260" alt="Queue card after the daily limit was reached">
@@ -110,10 +112,21 @@ lib/api.js           calls to X endpoints
 lib/store.js         chrome.storage.local (settings, scan, history, queue, daily count)
 lib/engine.js        scan + unfollow loop with pauses, daily limit and auto-stop
 ui/icons.js          Phosphor icons (MIT)
-ui/panel.js          the panel injected into x.com
+ui/styles.js         panel styles and logo
+ui/base.js           shared constants, safe DOM helpers, state
+ui/dialog.js         in-panel confirmation dialog
+ui/shell.js          header, status, data loading, tabs, summary meter
+ui/review.js         Review tab: list, search, filters, queue card, action bar
+ui/actions.js        scan, unfollow, queue, notifications, CSV export
+ui/history.js        History tab
+ui/health.js         read-only health check against X
+ui/rules.js          Rules tab: rules, location, pace, backup
+ui/geo-ui.js         "Account based in" check for candidates
+ui/panel.js          mounts the panel (loaded last)
 icons/               logo (SVG + PNG 16/32/48/128)
 fonts/               Geist (OFL)
-tests/               Node tests, no dependencies
+tests/               Node unit tests, no dependencies
+tests/e2e/           end-to-end tests: real Chromium + SapuX + a fake x.com
 docs/screenshots/    images for this README
 ```
 
@@ -122,10 +135,13 @@ No build step and no `npm install`: the code you read is the code Chrome runs.
 ## Tests
 
 ```bash
-node --test
+node --test                 # 49 unit tests, no dependencies
+bash tests/e2e/run_all.sh   # end-to-end, needs Python + Playwright + Chromium
 ```
 
-49 tests cover classification (inactive, small, one-way, quiet activity, protection, location), location guessing, the "Account based in" checker (rate-limit waits, stale request IDs), scan merging, settings limits, CSV escaping, the unfollow engine (daily limit, stop on 429/403, skipping deleted accounts, Stop button, simulation sends nothing) and translation completeness. They run on every push through GitHub Actions.
+The unit tests cover classification (inactive, small, one-way, quiet activity, protection, location), location guessing and its accuracy measure, the "Account based in" checker (rate-limit waits, stale request IDs), scan merging, settings limits, CSV escaping, the unfollow engine (daily limit, stop on 429/403, skipping deleted accounts, Stop button, simulation sends nothing) and translation completeness.
+
+The end-to-end tests load SapuX into a real Chromium against a fake x.com served over HTTPS and click through everything a user does: scan, search, keep, simulate, live unfollow with the daily limit, the resumable queue, notifications, backup/restore, both languages and themes, location rules, the X location check, the health check, and the "extension was updated" screen. Both suites run on every push through GitHub Actions.
 
 ## License
 

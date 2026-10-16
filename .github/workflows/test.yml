@@ -24,3 +24,17 @@ jobs:
         run: for f in background.js lib/*.js ui/*.js; do node --check "$f"; done
       - name: Manifest is valid JSON
         run: node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8'))"
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Playwright + Chromium
+        run: |
+          pip install playwright==1.56.0
+          python -m playwright install --with-deps chromium
+      - name: End-to-end tests (real Chromium + SapuX + fake x.com)
+        run: bash tests/e2e/run_all.sh

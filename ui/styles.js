@@ -228,6 +228,22 @@ const CSS = `
   .group { display: flex; flex-direction: column; gap: 16px; }
   .group-title { margin: 0; font-size: 15px; font-weight: 650; letter-spacing: -.01em; }
   .group-note { margin: -10px 0 0; font-size: 12.5px; color: var(--faint); }
+  .fold { gap: 0; border-top: 1px solid var(--line); padding-top: 14px; }
+  .fold > summary { list-style: none; display: flex; align-items: center; gap: 10px; cursor: pointer; border-radius: 8px; }
+  .fold > summary::-webkit-details-marker { display: none; }
+  .fold > summary:focus-visible { outline: 2px solid var(--amber); outline-offset: 4px; }
+  .fold-sum { flex: 1; min-width: 0; text-align: right; font-size: 12.5px; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fold[open] .fold-sum { visibility: hidden; }
+  .chev { flex: none; width: 8px; height: 8px; border: solid var(--muted); border-width: 0 1.5px 1.5px 0; transform: translateY(-2px) rotate(45deg); transition: transform .18s var(--ease-out); }
+  .fold[open] .chev { transform: translateY(1px) rotate(225deg); }
+  .health { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .health-item { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: start; font-size: 12.5px; color: var(--text); text-wrap: pretty; }
+  .health-item .ico { margin-top: 1px; color: var(--faint); }
+  .health-item.ok .ico { color: var(--ok); }
+  .health-item.warn .ico { color: var(--accent-text); }
+  .health-item.fail .ico { color: var(--danger); }
+  .health-item.fail { color: var(--danger); }
+  .fold-body { display: flex; flex-direction: column; gap: 16px; padding-top: 16px; }
   .field { display: flex; flex-direction: column; gap: 6px; }
   .lbl { font-weight: 600; font-size: 13.5px; }
   .help { font-size: 12.5px; color: var(--faint); text-wrap: pretty; }

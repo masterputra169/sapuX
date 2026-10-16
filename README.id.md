@@ -27,6 +27,8 @@ SapuX adalah ekstensi Chrome kecil yang men-scan akun yang kamu follow, mengelom
 - **Notifikasi desktop** saat proses unfollow asli selesai atau berhenti.
 - **Backup dan restore** aturan + whitelist sebagai file JSON.
 - **Riwayat dengan undo.** Setiap unfollow tercatat; follow lagi dengan satu klik. Export CSV untuk hasil scan dan riwayat.
+- **Preset kecepatan** Aman, Seimbang, atau Cepat untuk mengisi semua jeda sekaligus.
+- **Cek kesehatan** sekali klik: menguji SapuX ke X saat ini juga (hanya membaca) dan memberi tahu bagian mana yang bermasalah serta cara memperbaikinya.
 - **Mode simulasi aktif secara default**, plus pop-up konfirmasi sebelum setiap proses: jumlah akun, sisa antrean, perkiraan waktu, dan peringatan.
 - English dan Bahasa Indonesia (tombol EN / ID), tema terang dan gelap (mengikuti X).
 
@@ -89,8 +91,11 @@ Permission: `storage`, `webRequest` (membaca header `Authorization` dari request
 ## Tes
 
 ```bash
-node --test
+node --test                 # 49 unit test, tanpa dependency
+bash tests/e2e/run_all.sh   # end-to-end, butuh Python + Playwright + Chromium
 ```
+
+Tes end-to-end memuat SapuX ke Chromium sungguhan dengan x.com tiruan, lalu mengklik semua alur seperti pengguna. Kedua jenis tes jalan otomatis di GitHub Actions setiap push.
 
 ## Lisensi
 

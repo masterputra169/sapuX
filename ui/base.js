@@ -28,6 +28,13 @@ const CANDIDATES = ["inactive", "small", "oneway", "unknown"]; // urutan antrean
 const GROUPS = ["inactive", "small", "oneway", "unknown", "active", "protected"];
 const OPTIONAL_GROUPS = { small: "smallMaxFollowers", oneway: "unfollowNonFollowers" };
 
+/** Profil kecepatan di Aturan. "Safe" = nilai default. */
+const PACES = [
+  { id: "safe", values: { minDelaySec: 20, maxDelaySec: 45, batchSize: 10, batchPauseMinMin: 3, batchPauseMaxMin: 6 } },
+  { id: "balanced", values: { minDelaySec: 15, maxDelaySec: 30, batchSize: 15, batchPauseMinMin: 2, batchPauseMaxMin: 4 } },
+  { id: "fast", values: { minDelaySec: 10, maxDelaySec: 20, batchSize: 20, batchPauseMinMin: 1, batchPauseMaxMin: 2 } },
+];
+
 // ---------- helper DOM aman ----------
 function h(tag, props, ...children) {
   const el = document.createElement(tag);
@@ -114,8 +121,28 @@ const state = {
   abort: null,
   stale: false,
   progress: null,
+  rulesOpen: loadFolds(), // bagian Aturan yang sedang terbuka
+  health: null, // hasil cek kesehatan terakhir
 };
 I18n.setLang(state.settings.lang);
+
+/** Bagian Aturan yang terbuka diingat per browser (kenyamanan saja; aman kalau storage tidak tersedia). */
+function loadFolds() {
+  try {
+    const saved = JSON.parse(localStorage.getItem("sapux:folds") || "null");
+    if (Array.isArray(saved)) return new Set(saved.filter((x) => typeof x === "string"));
+  } catch {
+    /* abaikan */
+  }
+  return new Set(["who"]);
+}
+function saveFolds() {
+  try {
+    localStorage.setItem("sapux:folds", JSON.stringify([...state.rulesOpen]));
+  } catch {
+    /* abaikan */
+  }
+}
 
 // Diisi oleh ui/panel.js saat panel dipasang.
 let host = null;

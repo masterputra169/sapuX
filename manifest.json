@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extName__",
-  "version": "2.7.0",
+  "version": "3.0.0",
   "description": "__MSG_extDescription__",
   "default_locale": "en",
   "icons": {
@@ -26,7 +26,7 @@
   "content_scripts": [
     {
       "matches": ["https://x.com/*"],
-      "js": ["lib/geo.js", "lib/core.js", "lib/i18n.js", "lib/api.js", "lib/store.js", "lib/engine.js", "ui/icons.js", "ui/styles.js", "ui/base.js", "ui/dialog.js", "ui/shell.js", "ui/review.js", "ui/actions.js", "ui/history.js", "ui/rules.js", "ui/geo-ui.js", "ui/panel.js"],
+      "js": ["lib/geo.js", "lib/core.js", "lib/i18n.js", "lib/api.js", "lib/store.js", "lib/engine.js", "ui/icons.js", "ui/styles.js", "ui/base.js", "ui/dialog.js", "ui/shell.js", "ui/review.js", "ui/actions.js", "ui/history.js", "ui/health.js", "ui/rules.js", "ui/geo-ui.js", "ui/panel.js"],
       "run_at": "document_idle"
     }
   ],

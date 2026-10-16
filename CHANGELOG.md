@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.0.0
+
+- Panel code split into files by responsibility (ui/base, styles, dialog, shell, review, actions, history, health, rules, geo-ui, panel). Same behavior, much easier to change safely.
+- Rules tab tidied into collapsible sections with one-line summaries (for example "80/day · 20-45 s · break every 10"); the sections you open are remembered.
+- Pace presets: Safe, Balanced and Fast fill in all pauses at once and show the time per 100 accounts. Editing a number by hand deselects the preset.
+- End-to-end test suite in the repo (tests/e2e): real Chromium + SapuX + a fake x.com, run by GitHub Actions on every push next to the unit tests.
+- Health check (Rules → Health check): a read-only test against X that checks login, session, the following list (1 account), the location request, today's unfollows and scan age, with a fix for anything that fails.
+
 ## 2.7.0
 
 - Smarter location guesses (no extra requests): flags and country words in the display name, demonyms and places in the bio ("Indonesian", "Proud Indian"), scripts (Devanagari, Thai, Hangul, Kana, Vietnamese…), everyday words in the bio and last post (Indonesian, Hindi/Urdu in Latin letters, Filipino, Nigerian Pidgin), plus the post language.

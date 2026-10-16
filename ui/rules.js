@@ -11,11 +11,31 @@
 function renderSettings() {
   const s = state.settings;
   const f = {};
+  let paceSync = null; // diisi paceButtons(); dipanggil saat angka jeda diubah manual
   const num = (key, unit, attrs = {}) => h("label", { class: "unit" }, (f[key] = h("input", { type: "number", inputmode: "numeric", value: String(s[key]), ...attrs })), unit ? h("span", null, unit) : null);
   const field = (label, control, help) => h("div", { class: "field" }, h("span", { class: "lbl" }, label), control, help ? h("span", { class: "help" }, help) : null);
   const sw = (key, label, help) =>
     h("label", { class: "switch" }, (f[key] = h("input", { type: "checkbox", role: "switch", checked: Boolean(s[key]) })), h("span", null, h("span", { class: "lbl" }, label), help ? h("div", { class: "help" }, help) : null));
   const preset = (key, value, label) => h("button", { class: "preset", type: "button", onclick: () => { f[key].value = String(value); } }, label);
+  /** Bagian yang bisa dilipat; status buka/tutup diingat (per browser). */
+  const fold = (id, title, summary, ...children) => {
+    const d = h(
+      "details",
+      {
+        class: "group fold",
+        "data-fold": id,
+        open: state.rulesOpen.has(id),
+        ontoggle: () => {
+          if (d.open) state.rulesOpen.add(id);
+          else state.rulesOpen.delete(id);
+          saveFolds();
+        },
+      },
+      h("summary", { class: "fold-head" }, h("span", { class: "group-title" }, title), summary ? h("span", { class: "fold-sum" }, summary) : h("span", { class: "fold-sum" }), h("i", { class: "chev", "aria-hidden": "true" })),
+      h("div", { class: "fold-body" }, children)
+    );
+    return d;
+  };
 
   f.whitelist = h("textarea", { rows: "5", placeholder: t("rules.whitelist.placeholder"), "aria-label": t("rules.whitelist") });
   f.whitelist.value = s.whitelist;
@@ -27,10 +47,10 @@ function renderSettings() {
     "form",
     { class: "form", onsubmit: saveSettings },
     modeCard,
-    h(
-      "section",
-      { class: "group" },
-      h("h3", { class: "group-title" }, t("rules.who")),
+    fold(
+      "who",
+      t("rules.who"),
+      null,
       field(
         t("rules.threshold"),
         h("div", { class: "inputrow" }, num("thresholdDays", t("unit.days"), { min: "30", max: "3650" }), h("span", { class: "presets" }, preset("thresholdDays", 180, t("preset.6m")), preset("thresholdDays", 365, t("preset.1y")), preset("thresholdDays", 730, t("preset.2y"))))
@@ -61,11 +81,12 @@ function renderSettings() {
       field(t("rules.whitelist"), f.whitelist, t("rules.whitelist.help"))
     ),
     geoSection(),
-    h(
-      "section",
-      { class: "group" },
-      h("h3", { class: "group-title" }, t("rules.speed")),
+    fold(
+      "speed",
+      t("rules.speed"),
+      t("rules.fold.speed", { cap: s.dailyCap, min: s.minDelaySec, max: s.maxDelaySec, batch: s.batchSize }),
       h("p", { class: "group-note" }, t("rules.speed.note")),
+      field(t("rules.pace"), paceButtons(), t("rules.pace.help")),
       field(t("rules.cap"), num("dailyCap", t("unit.accounts"), { min: "1", max: "500" }), t("rules.cap.help")),
       h("div", { class: "grid2" }, field(t("rules.minDelay"), num("minDelaySec", t("unit.seconds"), { min: "10" })), field(t("rules.maxDelay"), num("maxDelaySec", t("unit.seconds"), { min: "10" }))),
       field(t("rules.batch"), num("batchSize", t("unit.accounts"), { min: "1", max: "50" })),
@@ -74,6 +95,41 @@ function renderSettings() {
     ),
     h("div", { class: "formactions" }, h("button", { class: "btn primary", type: "submit", disabled: Boolean(state.busy) }, icon("check-circle", 16), t("rules.save")))
   );
+
+  /** Tiga profil kecepatan: mengisi jeda & istirahat sekaligus. Batas harian tidak diubah. */
+  function paceButtons() {
+    const row = h("div", { class: "chips", role: "group", "aria-label": t("rules.pace") });
+    const current = () => PACES.find((p) => ["minDelaySec", "maxDelaySec", "batchSize", "batchPauseMinMin", "batchPauseMaxMin"].every((k) => Number(f[k]?.value ?? s[k]) === p.values[k]));
+    const sync = () => {
+      const cur = current();
+      row.querySelectorAll(".chip").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.pace === cur?.id)));
+    };
+    for (const p of PACES) {
+      const per100 = I18n.duration(C.estimateSeconds(100, p.values));
+      row.append(
+        h(
+          "button",
+          {
+            type: "button",
+            class: "chip" + (p.id === "fast" ? " danger" : ""),
+            "data-pace": p.id,
+            title: t("rules.pace.per100", { t: per100 }),
+            onclick: () => {
+              for (const [k, v] of Object.entries(p.values)) f[k].value = String(v);
+              sync();
+            },
+          },
+          t("rules.pace." + p.id),
+          h("span", { class: "chip-n" }, "≈ " + per100)
+        )
+      );
+    }
+    // sinkron setelah input angka dibuat (form dibangun lebih dulu daripada isi bagian Kecepatan)
+    queueMicrotask(sync);
+    row.addEventListener("input", sync);
+    paceSync = sync;
+    return row;
+  }
 
   /** Bagian Lokasi: dua set chip (lindungi / unfollow duluan) + sakelar "hanya pilih lokasi prioritas". */
   function geoSection() {
@@ -117,10 +173,14 @@ function renderSettings() {
           return Geo.detectGeo(ab && ab.based ? { ...u, basedIn: ab.based, basedAccurate: ab.accurate } : u);
         }).length
       : 0;
-    return h(
-      "section",
-      { class: "group" },
-      h("h3", { class: "group-title" }, t("rules.geo")),
+    const names = (codes) => codes.map((c) => (Geo.OPTION_COUNTRIES.includes(c) ? Geo.flagEmoji(c) + " " : "") + placeName(c)).join(", ");
+    const summary = s.keepRegions.length || s.focusRegions.length
+      ? [s.keepRegions.length ? t("rules.fold.geoKeep", { list: names(s.keepRegions) }) : "", s.focusRegions.length ? t("rules.fold.geoFirst", { list: names(s.focusRegions) }) : ""].filter(Boolean).join(" · ")
+      : t("rules.fold.off");
+    return fold(
+      "geo",
+      t("rules.geo"),
+      summary,
       h("p", { class: "group-note" }, t("rules.geo.note")),
       users.length
         ? h("p", { class: "geo-note" + (hasData ? "" : " warn") }, hasData ? t("rules.geo.coverage", { n: n(found), total: n(users.length) }) : t("rules.geo.rescan"))
@@ -149,6 +209,8 @@ function renderSettings() {
       .join(" · ");
     return h("p", { class: "geo-note accuracy" }, t("rules.geo.accuracy", { pct: pct(m.match, m.n), n: n(m.n), by }));
   }
+
+  form.addEventListener("input", () => paceSync?.());
 
   async function saveSettings(e) {
     e.preventDefault();
@@ -187,10 +249,10 @@ function renderSettings() {
   }
 
   const fileInput = h("input", { type: "file", accept: "application/json,.json", hidden: true, onchange: (e) => importBackup(e.target) });
-  const backup = h(
-    "section",
-    { class: "group" },
-    h("h3", { class: "group-title" }, t("rules.backup")),
+  const backup = fold(
+    "backup",
+    t("rules.backup"),
+    null,
     h("p", { class: "group-note" }, t("rules.backup.help")),
     h(
       "div",
@@ -233,7 +295,14 @@ function renderSettings() {
       t("rules.wipe")
     )
   );
-  put(ui.body, form, backup, danger);
+  const health = fold("health", t("health.title"), state.health ? healthSummary() : null, healthBody());
+  put(ui.body, form, health, backup, danger);
+}
+
+function healthSummary() {
+  const fails = state.health.filter((i) => i.status === "fail").length;
+  const warns = state.health.filter((i) => i.status === "warn").length;
+  return fails ? t("health.sumFail", { n: fails }) : warns ? t("health.sumWarn", { n: warns }) : t("health.sumOk");
 }
 
 // ---------- backup aturan + whitelist ----------
